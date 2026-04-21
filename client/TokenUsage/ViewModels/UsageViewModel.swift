@@ -48,12 +48,14 @@ final class UsageViewModel: ObservableObject {
         Task { await refresh() }
     }
 
-    func refresh() async {
+    func refresh(silent: Bool = false) async {
         guard !isRefreshing else { return }
         isRefreshing = true
 
         let isFirstLoad = snapshot.lastUpdated == .distantPast
-        refreshState = isFirstLoad ? .loading : .refreshing
+        if !silent || isFirstLoad {
+            refreshState = isFirstLoad ? .loading : .refreshing
+        }
 
         do {
             let allData = try await service.fetchAll()
@@ -98,7 +100,7 @@ final class UsageViewModel: ObservableObject {
         refreshTimer = Timer.scheduledTimer(withTimeInterval: Self.refreshInterval, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
-                await self.refresh()
+                await self.refresh(silent: true)
             }
         }
     }

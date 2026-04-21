@@ -6,7 +6,7 @@ struct MenuBarLabel: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(nsImage: makeIcon())
+            Image(nsImage: MenuBarIcon.image(for: iconState))
             Text(labelText)
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .monospacedDigit()
@@ -23,7 +23,38 @@ struct MenuBarLabel: View {
         }
     }
 
-    private func makeIcon() -> NSImage {
+    private var iconState: MenuBarIcon.State {
+        switch viewModel.refreshState {
+        case .failed: return .failed
+        case .loading, .refreshing: return .loading
+        default: return .normal
+        }
+    }
+}
+
+enum MenuBarIcon {
+    enum State { case normal, loading, failed }
+
+    private static let cache: [State: NSImage] = [
+        .normal: makeImage(colors: [
+            NSColor(red: 0.94, green: 0.75, blue: 0.25, alpha: 1),
+            NSColor(red: 1.00, green: 0.55, blue: 0.20, alpha: 1)
+        ]),
+        .loading: makeImage(colors: [
+            NSColor(red: 1.00, green: 0.70, blue: 0.15, alpha: 1),
+            NSColor(red: 1.00, green: 0.85, blue: 0.25, alpha: 1)
+        ]),
+        .failed: makeImage(colors: [
+            NSColor(red: 0.95, green: 0.30, blue: 0.25, alpha: 1),
+            NSColor(red: 1.00, green: 0.55, blue: 0.20, alpha: 1)
+        ])
+    ]
+
+    static func image(for state: State) -> NSImage {
+        cache[state] ?? cache[.normal]!
+    }
+
+    private static func makeImage(colors: [NSColor]) -> NSImage {
         let size: CGFloat = 16
         let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
             let inset: CGFloat = 1.5
@@ -33,25 +64,6 @@ struct MenuBarLabel: View {
             diamond.line(to: NSPoint(x: rect.midX, y: rect.maxY - inset))
             diamond.line(to: NSPoint(x: rect.minX + inset, y: rect.midY))
             diamond.close()
-
-            let colors: [NSColor]
-            switch self.viewModel.refreshState {
-            case .failed:
-                colors = [
-                    NSColor(red: 0.95, green: 0.30, blue: 0.25, alpha: 1),
-                    NSColor(red: 1.00, green: 0.55, blue: 0.20, alpha: 1)
-                ]
-            case .loading, .refreshing:
-                colors = [
-                    NSColor(red: 1.00, green: 0.70, blue: 0.15, alpha: 1),
-                    NSColor(red: 1.00, green: 0.85, blue: 0.25, alpha: 1)
-                ]
-            default:
-                colors = [
-                    NSColor(red: 0.94, green: 0.75, blue: 0.25, alpha: 1),
-                    NSColor(red: 1.00, green: 0.55, blue: 0.20, alpha: 1)
-                ]
-            }
 
             if let gradient = NSGradient(colors: colors) {
                 gradient.draw(in: diamond, angle: -45)
