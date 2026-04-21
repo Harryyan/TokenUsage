@@ -1,3 +1,4 @@
+# macOS client
 .build/
 .swiftpm/
 TokenUsage.app/
@@ -6,3 +7,12 @@ AppIcon.iconset/
 xcuserdata/
 DerivedData/
 .DS_Store
+
+# Supabase
+server/supabase/.temp/
+server/supabase/.env
+server/.env
+
+# Secrets
+.env
+.env.local
