@@ -1,45 +1,52 @@
 import SwiftUI
 
-// MARK: - Design Tokens
+// MARK: - Pixel Design Tokens
 
-enum Theme {
-    static let costAccent = Color(red: 0.30, green: 0.85, blue: 0.50)
-    static let inputColor = Color(red: 0.40, green: 0.65, blue: 1.0)
-    static let outputColor = Color(red: 0.76, green: 0.55, blue: 1.0)
-    static let cacheWriteColor = Color(red: 1.0, green: 0.60, blue: 0.25)
-    static let cacheReadColor = Color(red: 0.20, green: 0.83, blue: 0.75)
+enum Pixel {
+    static let bg = Color(red: 0.05, green: 0.06, blue: 0.10)
+    static let panel = Color(red: 0.09, green: 0.09, blue: 0.16)
+    static let borderBright = Color(red: 0.29, green: 0.31, blue: 0.48)
+    static let borderDim = Color(red: 0.16, green: 0.18, blue: 0.29)
 
-    static let cardFill = Color.white.opacity(0.04)
-    static let cardBorder = Color.white.opacity(0.07)
-    static let radius: CGFloat = 10
+    static let text = Color(red: 0.91, green: 0.90, blue: 0.94)
+    static let textDim = Color(red: 0.48, green: 0.49, blue: 0.62)
+    static let textMuted = Color(red: 0.28, green: 0.29, blue: 0.42)
+
+    static let gold = Color(red: 0.94, green: 0.75, blue: 0.25)
+    static let green = Color(red: 0.31, green: 0.91, blue: 0.31)
+    static let red = Color(red: 1.0, green: 0.25, blue: 0.38)
+    static let amber = Color(red: 1.0, green: 0.69, blue: 0.13)
+
+    static let inputBlue = Color(red: 0.31, green: 0.63, blue: 1.0)
+    static let outputPurple = Color(red: 0.82, green: 0.38, blue: 1.0)
+    static let cacheOrange = Color(red: 1.0, green: 0.50, blue: 0.25)
+    static let cacheCyan = Color(red: 0.25, green: 0.91, blue: 0.82)
 }
 
-// MARK: - Card Background Modifier
+// MARK: - RPG Double-Border Frame
 
-struct CardStyle: ViewModifier {
+struct PixelFrame: ViewModifier {
+    var accent: Color = Pixel.borderBright
+
     func body(content: Content) -> some View {
         content
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.radius)
-                    .fill(Theme.cardFill)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Theme.radius)
-                            .strokeBorder(Theme.cardBorder, lineWidth: 0.5)
-                    )
-            )
+            .padding(10)
+            .background(Pixel.panel)
+            .overlay(Rectangle().strokeBorder(Pixel.borderDim, lineWidth: 1))
+            .padding(2)
+            .overlay(Rectangle().strokeBorder(accent, lineWidth: 2))
     }
 }
 
 extension View {
-    func cardStyle() -> some View {
-        modifier(CardStyle())
+    func pixelFrame(accent: Color = Pixel.borderBright) -> some View {
+        modifier(PixelFrame(accent: accent))
     }
 }
 
-// MARK: - Token Proportion Bar
+// MARK: - Pixel HP Bar
 
-struct TokenProportionBar: View {
+struct PixelBar: View {
     let input: Int
     let output: Int
     let cacheWrite: Int
@@ -50,28 +57,40 @@ struct TokenProportionBar: View {
     var body: some View {
         GeometryReader { geo in
             if total == 0 {
-                Capsule().fill(Color.white.opacity(0.06))
+                Rectangle().fill(Pixel.borderDim)
             } else {
-                HStack(spacing: 1.5) {
-                    segment(Theme.inputColor, count: input, width: geo.size.width)
-                    segment(Theme.outputColor, count: output, width: geo.size.width)
-                    segment(Theme.cacheWriteColor, count: cacheWrite, width: geo.size.width)
-                    segment(Theme.cacheReadColor, count: cacheRead, width: geo.size.width)
+                HStack(spacing: 1) {
+                    segment(Pixel.inputBlue, count: input, width: geo.size.width)
+                    segment(Pixel.outputPurple, count: output, width: geo.size.width)
+                    segment(Pixel.cacheOrange, count: cacheWrite, width: geo.size.width)
+                    segment(Pixel.cacheCyan, count: cacheRead, width: geo.size.width)
                 }
             }
         }
-        .frame(height: 5)
-        .clipShape(Capsule())
+        .frame(height: 8)
+        .background(Pixel.bg)
+        .border(Pixel.borderDim, width: 1)
+        .padding(1)
+        .border(Pixel.borderBright, width: 1)
     }
 
     @ViewBuilder
     private func segment(_ color: Color, count: Int, width: CGFloat) -> some View {
         if count > 0 {
-            let fraction = CGFloat(count) / CGFloat(total)
-            RoundedRectangle(cornerRadius: 2)
+            Rectangle()
                 .fill(color)
-                .frame(width: max(width * fraction, 3))
+                .frame(width: max(width * CGFloat(count) / CGFloat(total), 3))
         }
+    }
+}
+
+// MARK: - Pixel Divider
+
+struct PixelDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Pixel.borderBright)
+            .frame(height: 2)
     }
 }
 
@@ -84,32 +103,33 @@ struct TokenBreakdownRow: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Circle()
+            Rectangle()
                 .fill(color)
-                .frame(width: 7, height: 7)
+                .frame(width: 6, height: 6)
             Text(label)
-                .font(.system(size: 11.5))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Pixel.textDim)
             Spacer()
             Text(TokenFormatter.abbreviated(tokens))
-                .font(.system(size: 11.5, design: .monospaced))
                 .monospacedDigit()
             Text("(\(TokenFormatter.precise(tokens)))")
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Pixel.textMuted)
         }
+        .font(.system(size: 11, design: .monospaced))
     }
 }
 
-// MARK: - Section Label
+// MARK: - Section Header
 
-struct SectionLabel: View {
+struct PixelSectionHeader: View {
     let text: String
 
     var body: some View {
-        Text(text.uppercased())
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(.tertiary)
-            .tracking(0.8)
+        HStack(spacing: 6) {
+            Text(">>>")
+                .foregroundStyle(Pixel.gold)
+            Text(text.uppercased())
+                .foregroundStyle(Pixel.textDim)
+        }
+        .font(.system(size: 10, weight: .bold, design: .monospaced))
     }
 }

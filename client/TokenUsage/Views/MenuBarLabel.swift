@@ -48,8 +48,8 @@ struct MenuBarLabel: View {
                 ]
             default:
                 colors = [
-                    NSColor(red: 0.25, green: 0.90, blue: 0.55, alpha: 1),
-                    NSColor(red: 0.15, green: 0.65, blue: 0.90, alpha: 1)
+                    NSColor(red: 0.94, green: 0.75, blue: 0.25, alpha: 1),
+                    NSColor(red: 1.00, green: 0.55, blue: 0.20, alpha: 1)
                 ]
             }
 
