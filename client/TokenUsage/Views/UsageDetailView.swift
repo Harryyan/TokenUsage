@@ -46,9 +46,11 @@ struct UsageDetailView: View {
                         .font(.system(size: 7))
                         .foregroundStyle(statusColor)
                     if viewModel.snapshot.lastUpdated != .distantPast {
-                        Text("Synced \(DateFormatters.relativeTime(from: viewModel.snapshot.lastUpdated))")
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundStyle(Pixel.textMuted)
+                        TimelineView(.periodic(from: .now, by: 60)) { _ in
+                            Text("Synced \(DateFormatters.relativeTime(from: viewModel.snapshot.lastUpdated))")
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(Pixel.textMuted)
+                        }
                     }
                 }
             }
