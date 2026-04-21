@@ -131,12 +131,12 @@
         }
       }
     },
-    "SCORE" : {
+    "COST" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "得分"
+            "value" : "花费"
           }
         }
       }

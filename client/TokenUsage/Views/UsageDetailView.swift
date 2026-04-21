@@ -170,7 +170,7 @@ struct UsageDetailView: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Text(verbatim: "◆").foregroundStyle(theme.accent)
-                Text("SCORE").foregroundStyle(theme.accent.opacity(0.7))
+                Text("COST").foregroundStyle(theme.accent.opacity(0.7))
                 Text(verbatim: "◆").foregroundStyle(theme.accent)
                 Spacer()
             }
