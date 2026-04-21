@@ -74,6 +74,20 @@ struct UsageDetailView: View {
                         }
                     }
                     Divider()
+                    Menu("Language") {
+                        ForEach(AppLanguage.allCases) { lang in
+                            Button {
+                                AppLanguageManager.setAndRelaunch(lang)
+                            } label: {
+                                if AppLanguageManager.current == lang {
+                                    Label(lang.displayKey, systemImage: "checkmark")
+                                } else {
+                                    Text(lang.displayKey)
+                                }
+                            }
+                        }
+                    }
+                    Divider()
                     Button("Quit") { NSApplication.shared.terminate(nil) }
                 } label: {
                     Text("⚙")
