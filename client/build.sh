@@ -93,9 +93,25 @@ cat > "${CONTENTS_DIR}/Info.plist" <<PLIST
 	<true/>
 	<key>NSSupportsSuddenTermination</key>
 	<true/>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>zh-Hans</string>
+	</array>
 </dict>
 </plist>
 PLIST
+
+# Compile String Catalog -> .lproj/Localizable.strings
+XCSTRINGS="${PROJECT_DIR}/Localizable.xcstrings"
+if [ -f "${XCSTRINGS}" ]; then
+    echo "==> Compiling String Catalog..."
+    xcrun xcstringstool compile "${XCSTRINGS}" -o "${RESOURCES_DIR}"
+    # xcstringstool only emits translated locales; source language (en)
+    # needs a placeholder .lproj so macOS advertises it as supported.
+    mkdir -p "${RESOURCES_DIR}/en.lproj"
+    touch "${RESOURCES_DIR}/en.lproj/Localizable.strings"
+fi
 
 # Copy entitlements into Resources (for reference)
 if [ -f "${ENTITLEMENTS}" ]; then

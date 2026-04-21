@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - ccusage JSON Response Models
 
@@ -176,6 +177,14 @@ enum MenuBarDisplayMode: String, CaseIterable {
     case tokenOnly = "Token Only"
     case tokenAndCost = "Token + Cost"
     case costOnly = "Cost Only"
+
+    var displayKey: LocalizedStringKey {
+        switch self {
+        case .tokenOnly: return "Token Only"
+        case .tokenAndCost: return "Token + Cost"
+        case .costOnly: return "Cost Only"
+        }
+    }
 }
 
 enum TimePeriod: String, CaseIterable {

@@ -97,7 +97,7 @@ struct PixelDivider: View {
 // MARK: - Token Breakdown Row
 
 struct TokenBreakdownRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let tokens: Int
     let color: Color
 
@@ -111,7 +111,7 @@ struct TokenBreakdownRow: View {
             Spacer()
             Text(TokenFormatter.abbreviated(tokens))
                 .monospacedDigit()
-            Text("(\(TokenFormatter.precise(tokens)))")
+            Text(verbatim: "(\(TokenFormatter.precise(tokens)))")
                 .foregroundStyle(Pixel.textMuted)
         }
         .font(.system(size: 11, design: .monospaced))
@@ -121,13 +121,13 @@ struct TokenBreakdownRow: View {
 // MARK: - Section Header
 
 struct PixelSectionHeader: View {
-    let text: String
+    let text: LocalizedStringKey
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(">>>")
+            Text(verbatim: ">>>")
                 .foregroundStyle(Pixel.gold)
-            Text(text.uppercased())
+            Text(text)
                 .foregroundStyle(Pixel.textDim)
         }
         .font(.system(size: 10, weight: .bold, design: .monospaced))

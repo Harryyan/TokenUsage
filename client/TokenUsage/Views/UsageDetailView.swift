@@ -67,9 +67,9 @@ struct UsageDetailView: View {
                             viewModel.setDisplayMode(mode)
                         } label: {
                             if viewModel.menuBarDisplayMode == mode {
-                                Label(mode.rawValue, systemImage: "checkmark")
+                                Label(mode.displayKey, systemImage: "checkmark")
                             } else {
-                                Text(mode.rawValue)
+                                Text(mode.displayKey)
                             }
                         }
                     }
@@ -186,7 +186,7 @@ struct UsageDetailView: View {
 
     private var modelSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            PixelSectionHeader(text: "Models")
+            PixelSectionHeader(text: "MODELS")
 
             VStack(spacing: 4) {
                 ForEach(viewModel.currentPeriodUsage.modelBreakdowns) { b in
@@ -213,7 +213,7 @@ struct UsageDetailView: View {
 
     private var averageSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            PixelSectionHeader(text: "Daily Avg")
+            PixelSectionHeader(text: "DAILY AVG")
 
             HStack {
                 HStack(spacing: 4) {
@@ -267,7 +267,7 @@ struct UsageDetailView: View {
 }
 
 private extension TimePeriod {
-    var tabLabel: String {
+    var tabLabel: LocalizedStringKey {
         switch self {
         case .today: return "TODAY"
         case .week: return "WEEK"
