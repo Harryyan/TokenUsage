@@ -1,45 +1,23 @@
 import SwiftUI
 
-// MARK: - Pixel Design Tokens
-
-enum Pixel {
-    static let bg = Color(red: 0.05, green: 0.06, blue: 0.10)
-    static let panel = Color(red: 0.09, green: 0.09, blue: 0.16)
-    static let borderBright = Color(red: 0.29, green: 0.31, blue: 0.48)
-    static let borderDim = Color(red: 0.16, green: 0.18, blue: 0.29)
-
-    static let text = Color(red: 0.91, green: 0.90, blue: 0.94)
-    static let textDim = Color(red: 0.48, green: 0.49, blue: 0.62)
-    static let textMuted = Color(red: 0.28, green: 0.29, blue: 0.42)
-
-    static let gold = Color(red: 0.94, green: 0.75, blue: 0.25)
-    static let green = Color(red: 0.31, green: 0.91, blue: 0.31)
-    static let red = Color(red: 1.0, green: 0.25, blue: 0.38)
-    static let amber = Color(red: 1.0, green: 0.69, blue: 0.13)
-
-    static let inputBlue = Color(red: 0.31, green: 0.63, blue: 1.0)
-    static let outputPurple = Color(red: 0.82, green: 0.38, blue: 1.0)
-    static let cacheOrange = Color(red: 1.0, green: 0.50, blue: 0.25)
-    static let cacheCyan = Color(red: 0.25, green: 0.91, blue: 0.82)
-}
-
 // MARK: - RPG Double-Border Frame
 
 struct PixelFrame: ViewModifier {
-    var accent: Color = Pixel.borderBright
+    @EnvironmentObject var theme: ThemeManager
+    var accent: Color? = nil
 
     func body(content: Content) -> some View {
         content
             .padding(10)
-            .background(Pixel.panel)
-            .overlay(Rectangle().strokeBorder(Pixel.borderDim, lineWidth: 1))
+            .background(theme.panel)
+            .overlay(Rectangle().strokeBorder(theme.borderDim, lineWidth: 1))
             .padding(2)
-            .overlay(Rectangle().strokeBorder(accent, lineWidth: 2))
+            .overlay(Rectangle().strokeBorder(accent ?? theme.borderBright, lineWidth: 2))
     }
 }
 
 extension View {
-    func pixelFrame(accent: Color = Pixel.borderBright) -> some View {
+    func pixelFrame(accent: Color? = nil) -> some View {
         modifier(PixelFrame(accent: accent))
     }
 }
@@ -47,6 +25,8 @@ extension View {
 // MARK: - Pixel HP Bar
 
 struct PixelBar: View {
+    @EnvironmentObject var theme: ThemeManager
+
     let input: Int
     let output: Int
     let cacheWrite: Int
@@ -57,21 +37,21 @@ struct PixelBar: View {
     var body: some View {
         GeometryReader { geo in
             if total == 0 {
-                Rectangle().fill(Pixel.borderDim)
+                Rectangle().fill(theme.borderDim)
             } else {
                 HStack(spacing: 1) {
-                    segment(Pixel.inputBlue, count: input, width: geo.size.width)
-                    segment(Pixel.outputPurple, count: output, width: geo.size.width)
-                    segment(Pixel.cacheOrange, count: cacheWrite, width: geo.size.width)
-                    segment(Pixel.cacheCyan, count: cacheRead, width: geo.size.width)
+                    segment(theme.input, count: input, width: geo.size.width)
+                    segment(theme.output, count: output, width: geo.size.width)
+                    segment(theme.cacheWrite, count: cacheWrite, width: geo.size.width)
+                    segment(theme.cacheRead, count: cacheRead, width: geo.size.width)
                 }
             }
         }
         .frame(height: 8)
-        .background(Pixel.bg)
-        .border(Pixel.borderDim, width: 1)
+        .background(theme.bg)
+        .border(theme.borderDim, width: 1)
         .padding(1)
-        .border(Pixel.borderBright, width: 1)
+        .border(theme.borderBright, width: 1)
     }
 
     @ViewBuilder
@@ -87,9 +67,11 @@ struct PixelBar: View {
 // MARK: - Pixel Divider
 
 struct PixelDivider: View {
+    @EnvironmentObject var theme: ThemeManager
+
     var body: some View {
         Rectangle()
-            .fill(Pixel.borderBright)
+            .fill(theme.borderBright)
             .frame(height: 2)
     }
 }
@@ -97,6 +79,8 @@ struct PixelDivider: View {
 // MARK: - Token Breakdown Row
 
 struct TokenBreakdownRow: View {
+    @EnvironmentObject var theme: ThemeManager
+
     let label: LocalizedStringKey
     let tokens: Int
     let color: Color
@@ -107,12 +91,12 @@ struct TokenBreakdownRow: View {
                 .fill(color)
                 .frame(width: 6, height: 6)
             Text(label)
-                .foregroundStyle(Pixel.textDim)
+                .foregroundStyle(theme.textDim)
             Spacer()
             Text(TokenFormatter.abbreviated(tokens))
                 .monospacedDigit()
             Text(verbatim: "(\(TokenFormatter.precise(tokens)))")
-                .foregroundStyle(Pixel.textMuted)
+                .foregroundStyle(theme.textMuted)
         }
         .font(.system(size: 11, design: .monospaced))
     }
@@ -121,14 +105,16 @@ struct TokenBreakdownRow: View {
 // MARK: - Section Header
 
 struct PixelSectionHeader: View {
+    @EnvironmentObject var theme: ThemeManager
+
     let text: LocalizedStringKey
 
     var body: some View {
         HStack(spacing: 6) {
             Text(verbatim: ">>>")
-                .foregroundStyle(Pixel.gold)
+                .foregroundStyle(theme.accent)
             Text(text)
-                .foregroundStyle(Pixel.textDim)
+                .foregroundStyle(theme.textDim)
         }
         .font(.system(size: 10, weight: .bold, design: .monospaced))
     }

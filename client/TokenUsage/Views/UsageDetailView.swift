@@ -2,6 +2,7 @@ import SwiftUI
 
 struct UsageDetailView: View {
     @ObservedObject var viewModel: UsageViewModel
+    @EnvironmentObject var theme: ThemeManager
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,8 +27,8 @@ struct UsageDetailView: View {
             footerSection
         }
         .frame(width: 360)
-        .background(Pixel.bg)
-        .foregroundStyle(Pixel.text)
+        .background(theme.bg)
+        .foregroundStyle(theme.text)
     }
 
     // MARK: - Header
@@ -36,20 +37,20 @@ struct UsageDetailView: View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text("★")
-                        .foregroundStyle(Pixel.gold)
+                    Text(verbatim: "★")
+                        .foregroundStyle(theme.accent)
                     Text("CLAUDE CODE USAGE")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                 }
                 HStack(spacing: 5) {
-                    Text("●")
+                    Text(verbatim: "●")
                         .font(.system(size: 7))
                         .foregroundStyle(statusColor)
                     if viewModel.snapshot.lastUpdated != .distantPast {
                         TimelineView(.periodic(from: .now, by: 60)) { _ in
                             Text("Synced \(DateFormatters.relativeTime(from: viewModel.snapshot.lastUpdated))")
                                 .font(.system(size: 10, design: .monospaced))
-                                .foregroundStyle(Pixel.textMuted)
+                                .foregroundStyle(theme.textMuted)
                         }
                     }
                 }
@@ -74,6 +75,19 @@ struct UsageDetailView: View {
                         }
                     }
                     Divider()
+                    Menu("Theme") {
+                        ForEach(Theme.all) { t in
+                            Button {
+                                theme.select(t)
+                            } label: {
+                                if theme.current == t {
+                                    Label(t.displayKey, systemImage: "checkmark")
+                                } else {
+                                    Text(t.displayKey)
+                                }
+                            }
+                        }
+                    }
                     Menu("Language") {
                         ForEach(AppLanguage.allCases) { lang in
                             Button {
@@ -90,12 +104,12 @@ struct UsageDetailView: View {
                     Divider()
                     Button("Quit") { NSApplication.shared.terminate(nil) }
                 } label: {
-                    Text("⚙")
+                    Text(verbatim: "⚙")
                         .font(.system(size: 13))
-                        .foregroundStyle(Pixel.textDim)
+                        .foregroundStyle(theme.textDim)
                         .frame(width: 24, height: 24)
-                        .background(Pixel.panel)
-                        .border(Pixel.borderDim, width: 1)
+                        .background(theme.panel)
+                        .border(theme.borderDim, width: 1)
                 }
                 .buttonStyle(.plain)
                 .menuStyle(.borderlessButton)
@@ -107,12 +121,12 @@ struct UsageDetailView: View {
 
     private func pixelButton(_ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(label)
+            Text(verbatim: label)
                 .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundStyle(Pixel.textDim)
+                .foregroundStyle(theme.textDim)
                 .frame(width: 24, height: 24)
-                .background(Pixel.panel)
-                .border(Pixel.borderDim, width: 1)
+                .background(theme.panel)
+                .border(theme.borderDim, width: 1)
         }
         .buttonStyle(.plain)
     }
@@ -130,17 +144,17 @@ struct UsageDetailView: View {
                 } label: {
                     HStack(spacing: 4) {
                         if active {
-                            Text("▶")
+                            Text(verbatim: "▶")
                                 .font(.system(size: 8))
-                                .foregroundStyle(Pixel.gold)
+                                .foregroundStyle(theme.accent)
                         }
                         Text(period.tabLabel)
                             .font(.system(size: 11, weight: active ? .bold : .regular, design: .monospaced))
-                            .foregroundStyle(active ? Pixel.gold : Pixel.textDim)
+                            .foregroundStyle(active ? theme.accent : theme.textDim)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 7)
-                    .background(active ? Pixel.gold.opacity(0.08) : Color.clear)
+                    .background(active ? theme.accent.opacity(0.08) : Color.clear)
                 }
                 .buttonStyle(.plain)
             }
@@ -155,26 +169,26 @@ struct UsageDetailView: View {
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Text("◆").foregroundStyle(Pixel.gold)
-                Text("SCORE").foregroundStyle(Pixel.gold.opacity(0.7))
-                Text("◆").foregroundStyle(Pixel.gold)
+                Text(verbatim: "◆").foregroundStyle(theme.accent)
+                Text("SCORE").foregroundStyle(theme.accent.opacity(0.7))
+                Text(verbatim: "◆").foregroundStyle(theme.accent)
                 Spacer()
             }
             .font(.system(size: 10, weight: .bold, design: .monospaced))
 
             Text(CostFormatter.standard(usage.totalCost))
                 .font(.system(size: 32, weight: .bold, design: .monospaced))
-                .foregroundStyle(Pixel.gold)
-                .shadow(color: Pixel.gold.opacity(0.4), radius: 12)
+                .foregroundStyle(theme.accent)
+                .shadow(color: theme.accent.opacity(0.4), radius: 12)
 
             HStack {
                 Text(TokenFormatter.precise(usage.totalTokens))
-                    .foregroundStyle(Pixel.text)
+                    .foregroundStyle(theme.text)
                 Text("tokens")
-                    .foregroundStyle(Pixel.textDim)
+                    .foregroundStyle(theme.textDim)
                 Spacer()
                 Text(TokenFormatter.abbreviated(usage.totalTokens))
-                    .foregroundStyle(Pixel.textDim)
+                    .foregroundStyle(theme.textDim)
             }
             .font(.system(size: 12, design: .monospaced))
 
@@ -187,13 +201,13 @@ struct UsageDetailView: View {
             .padding(.vertical, 2)
 
             VStack(spacing: 4) {
-                TokenBreakdownRow(label: "Input", tokens: usage.inputTokens, color: Pixel.inputBlue)
-                TokenBreakdownRow(label: "Output", tokens: usage.outputTokens, color: Pixel.outputPurple)
-                TokenBreakdownRow(label: "Cache W", tokens: usage.cacheCreationTokens, color: Pixel.cacheOrange)
-                TokenBreakdownRow(label: "Cache R", tokens: usage.cacheReadTokens, color: Pixel.cacheCyan)
+                TokenBreakdownRow(label: "Input", tokens: usage.inputTokens, color: theme.input)
+                TokenBreakdownRow(label: "Output", tokens: usage.outputTokens, color: theme.output)
+                TokenBreakdownRow(label: "Cache W", tokens: usage.cacheCreationTokens, color: theme.cacheWrite)
+                TokenBreakdownRow(label: "Cache R", tokens: usage.cacheReadTokens, color: theme.cacheRead)
             }
         }
-        .pixelFrame(accent: Pixel.gold.opacity(0.5))
+        .pixelFrame(accent: theme.accent.opacity(0.5))
     }
 
     // MARK: - Models
@@ -213,7 +227,7 @@ struct UsageDetailView: View {
                         Text(TokenFormatter.abbreviated(total))
                             .monospacedDigit()
                         Text(CostFormatter.standard(b.cost))
-                            .foregroundStyle(Pixel.gold.opacity(0.7))
+                            .foregroundStyle(theme.accent.opacity(0.7))
                             .frame(width: 64, alignment: .trailing)
                     }
                     .font(.system(size: 11, design: .monospaced))
@@ -231,12 +245,12 @@ struct UsageDetailView: View {
 
             HStack {
                 HStack(spacing: 4) {
-                    Text("#").foregroundStyle(Pixel.inputBlue)
+                    Text(verbatim: "#").foregroundStyle(theme.input)
                     Text(TokenFormatter.abbreviated(viewModel.currentPeriodUsage.averageDailyTokens))
                 }
                 Spacer()
                 HStack(spacing: 4) {
-                    Text("$").foregroundStyle(Pixel.gold)
+                    Text(verbatim: "$").foregroundStyle(theme.accent)
                     Text(CostFormatter.standard(viewModel.currentPeriodUsage.averageDailyCost))
                 }
             }
@@ -249,14 +263,14 @@ struct UsageDetailView: View {
 
     private var footerSection: some View {
         HStack(spacing: 6) {
-            Text("★").foregroundStyle(Pixel.gold)
-            Text("LIFETIME").foregroundStyle(Pixel.textMuted)
+            Text(verbatim: "★").foregroundStyle(theme.accent)
+            Text("LIFETIME").foregroundStyle(theme.textMuted)
             Spacer()
             Text(TokenFormatter.abbreviated(viewModel.snapshot.total.totalTokens))
-                .foregroundStyle(Pixel.textDim)
-            Text("·").foregroundStyle(Pixel.textMuted)
+                .foregroundStyle(theme.textDim)
+            Text(verbatim: "·").foregroundStyle(theme.textMuted)
             Text(CostFormatter.standard(viewModel.snapshot.total.totalCost))
-                .foregroundStyle(Pixel.gold.opacity(0.7))
+                .foregroundStyle(theme.accent.opacity(0.7))
         }
         .font(.system(size: 11, weight: .medium, design: .monospaced))
         .padding(.horizontal, 14)
@@ -267,10 +281,10 @@ struct UsageDetailView: View {
 
     private var statusColor: Color {
         switch viewModel.refreshState {
-        case .success: return Pixel.green
-        case .failed: return Pixel.red
-        case .loading, .refreshing: return Pixel.amber
-        case .idle: return Pixel.textMuted
+        case .success: return theme.statusGreen
+        case .failed: return theme.statusRed
+        case .loading, .refreshing: return theme.statusAmber
+        case .idle: return theme.textMuted
         }
     }
 
