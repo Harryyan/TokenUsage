@@ -2,7 +2,6 @@ import SwiftUI
 
 struct UsageDetailView: View {
     @ObservedObject var viewModel: UsageViewModel
-    @Namespace private var tabNamespace
 
     var body: some View {
         VStack(spacing: 0) {
@@ -126,13 +125,12 @@ struct UsageDetailView: View {
                         .foregroundStyle(viewModel.selectedPeriod == period ? .primary : .secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
-                        .background {
-                            if viewModel.selectedPeriod == period {
-                                Capsule()
-                                    .fill(Color.white.opacity(0.10))
-                                    .matchedGeometryEffect(id: "activeTab", in: tabNamespace)
-                            }
-                        }
+                        .background(
+                            Capsule()
+                                .fill(viewModel.selectedPeriod == period
+                                      ? Color.white.opacity(0.10)
+                                      : Color.clear)
+                        )
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
