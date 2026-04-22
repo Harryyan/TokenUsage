@@ -1,71 +1,102 @@
 # TokenUsage
 
-A native macOS Menu Bar app that displays real-time Claude Code token usage and costs, powered by [ccusage](https://github.com/ryoppippi/ccusage).
+A native macOS menu bar app that tracks Claude Code token usage and cost in real time, powered by [ccusage](https://github.com/ryoppippi/ccusage).
 
-![macOS](https://img.shields.io/badge/macOS-13.0%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange)
+![macOS 13+](https://img.shields.io/badge/macOS-13.0%2B-blue) ![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange) ![License MIT](https://img.shields.io/badge/license-MIT-green)
+
+---
+
+## Why
+
+`ccusage` exposes Claude Code usage locally, but running a CLI while you work breaks flow. TokenUsage puts the numbers in the menu bar so they're always one glance away — and a click opens everything: the current 5-hour billing window's countdown, per-model cost, daily / weekly / monthly breakdowns.
 
 ## Features
 
-- **Menu Bar Display** — Live token usage in compact abbreviated format (e.g. 1.25M, 23.5K)
-- **Detail Panel** — Click to view full breakdown by Today / This Week / This Month / Total
-- **Token Breakdown** — Input, Output, Cache Write, Cache Read with precise numbers
-- **Model Breakdown** — Per-model cost and token usage
-- **Cost Tracking** — Real-time cost calculation in USD
-- **Auto Refresh** — Updates every 5 minutes, with manual refresh support
-- **Display Modes** — Switch between Token Only, Token + Cost, or Cost Only in menu bar
-- **Native macOS** — Built with SwiftUI, supports Light/Dark mode
+**At a glance (menu bar)**
+- Abbreviated token count and/or cost: `◈ 1.25M` · `◈ $12.30` · `◈ 1.25M · $12.30`
+- Auto-refresh every 5 minutes; manual refresh on demand
 
-## Screenshots
+**On click (detail panel)**
+- **5-hour block card** — countdown to the next rate-limit reset with spent / projected cost; counter ticks live every second
+- **Hero card** — cost + token total for the selected period, with input / output / cache-write / cache-read breakdown
+- **Model breakdown** — per-model cost (Opus / Sonnet / Haiku / …)
+- **Daily averages** — for Week / Month / All-time
+- **Period tabs** — Today / Week / Month / All
 
-| Menu Bar | Detail Panel |
-|----------|-------------|
-| `◈ 80.6K` | Token breakdown, model costs, daily averages |
+**Settings**
+- 5 built-in pixel-RPG color themes (Pixel Gold, Terminal Green, Synthwave, Gruvbox, Game Boy)
+- Menu bar display mode switcher (Token · Cost · Token + Cost)
+- In-app language switcher with auto-relaunch (English / 简体中文)
 
-## Prerequisites
+## Requirements
 
 - macOS 13.0+
-- [Node.js](https://nodejs.org/) (for npx)
-- [ccusage](https://github.com/ryoppippi/ccusage) — installed globally or available via npx
+- [Node.js](https://nodejs.org/) (for `npx`)
+- [ccusage](https://github.com/ryoppippi/ccusage) available via `npx` or installed globally
 
-## Build
+## Build & Run
 
 ```bash
-# Build the .app bundle
+cd client
 ./build.sh
-
-# Run
 open TokenUsage.app
+```
 
-# Install to Applications
+To install system-wide:
+
+```bash
 cp -R TokenUsage.app /Applications/
 ```
 
-## Architecture
+## How it works
+
+The client shells out to `npx ccusage` on a 5-minute cadence:
+
+| Command | Purpose |
+| --- | --- |
+| `ccusage daily --json --offline` | Full daily history, filtered locally for Today / Week / Month / All |
+| `ccusage blocks --json --active --offline` | Current 5-hour billing window (drives the block card) |
+
+Results are decoded into display models and rendered via SwiftUI. The 5-hour block card uses `TimelineView` to tick every second so the reset countdown feels live without re-invoking the CLI.
+
+## Repository layout
 
 ```
 TokenUsage/
-├── TokenUsageApp.swift          # App entry point (MenuBarExtra)
-├── Models/
-│   └── UsageModels.swift        # Data models (ccusage JSON + display models)
-├── Services/
-│   └── CCUsageService.swift     # Async ccusage CLI integration
-├── ViewModels/
-│   └── UsageViewModel.swift     # MVVM ViewModel, data aggregation, refresh scheduler
-├── Views/
-│   ├── MenuBarLabel.swift       # Dynamic menu bar label
-│   ├── UsageDetailView.swift    # Popover detail panel
-│   └── Components/
-│       └── StatCard.swift       # Reusable stat card & token breakdown row
-└── Utilities/
-    └── Formatters.swift         # Token (K/M/B) and cost ($) formatters
+├── client/                         # macOS SwiftUI app (SPM)
+│   ├── TokenUsage/
+│   │   ├── TokenUsageApp.swift     # MenuBarExtra entry point
+│   │   ├── Models/                 # ccusage JSON + display models
+│   │   ├── Services/               # CCUsageService (Process → ccusage)
+│   │   ├── ViewModels/             # UsageViewModel (MVVM, refresh scheduler)
+│   │   ├── Views/
+│   │   │   ├── MenuBarLabel.swift
+│   │   │   ├── UsageDetailView.swift
+│   │   │   └── Components/         # BlockCard, StatCard, pixel primitives
+│   │   ├── Theme/                  # Theme struct + 5 palettes + ThemeManager
+│   │   └── Utilities/              # Formatters, AppLanguageManager
+│   ├── Localizable.xcstrings       # String Catalog (en, zh-Hans)
+│   ├── Package.swift
+│   └── build.sh
+├── server/                         # Supabase multi-device sync backend (WIP)
+│   └── supabase/
+│       ├── migrations/
+│       └── functions/              # sync-usage · usage edge functions
+├── PRDS/                           # Product requirement docs
+└── README.md
 ```
 
-## How It Works
+## Server (work in progress)
 
-1. Calls `npx ccusage daily --json --offline` once per refresh cycle
-2. Filters the full daily dataset locally for Today / Week / Month / Total
-3. Aggregates token counts and costs per period
-4. Displays abbreviated values in menu bar, precise values in the detail panel
+`server/` holds a Supabase-backed multi-device sync backend — Postgres schema, RLS policies, and two Edge Functions (`sync-usage`, `usage`) — specified in `PRDS/PRD-1.md`. The backend is implemented; the macOS client does **not** yet call it, so today the app is local-only. See `server/README.md` for deployment.
+
+## Localization
+
+Strings live in `client/Localizable.xcstrings` (Apple String Catalog). Currently shipping `en` (source) and `zh-Hans`. To add a locale:
+
+1. Open `Localizable.xcstrings` in Xcode and add the new language.
+2. Add the code to `AppLanguage` in `Utilities/AppLanguageManager.swift`.
+3. Add the code to `CFBundleLocalizations` in `client/build.sh`.
 
 ## License
 
