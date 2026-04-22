@@ -9,17 +9,21 @@ struct BlockCard: View {
             PixelSectionHeader(text: "5H BLOCK")
 
             VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 6) {
-                    Text("RESETS IN")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(theme.textMuted)
-                    Text(verbatim: "\(block.remainingMinutes)m")
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    HStack(spacing: 6) {
+                        Text("RESETS IN")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundStyle(theme.textMuted)
+                        Text(verbatim: DurationFormatter.humanized(
+                            seconds: Int(max(0, block.endTime.timeIntervalSince(context.date)))
+                        ))
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundStyle(theme.accent)
-                    Spacer()
-                    Text(verbatim: "· \(resetClock)")
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(theme.textDim)
+                        Spacer()
+                        Text(verbatim: "· \(resetClock)")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(theme.textDim)
+                    }
                 }
 
                 progressBar

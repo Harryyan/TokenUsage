@@ -71,6 +71,37 @@ enum CostFormatter {
     }
 }
 
+enum DurationFormatter {
+    static func humanized(seconds totalSeconds: Int) -> String {
+        let s = max(0, totalSeconds)
+        let hours = s / 3600
+        let mins = (s % 3600) / 60
+        let secs = s % 60
+
+        if hours > 0 && mins > 0 {
+            return String(
+                format: NSLocalizedString("%lldh %lldm", comment: "duration: hours and minutes"),
+                hours, mins
+            )
+        } else if hours > 0 {
+            return String(
+                format: NSLocalizedString("%lldh", comment: "duration: hours"),
+                hours
+            )
+        } else if mins > 0 {
+            return String(
+                format: NSLocalizedString("%lldm", comment: "duration: minutes"),
+                mins
+            )
+        } else {
+            return String(
+                format: NSLocalizedString("%llds", comment: "duration: seconds"),
+                secs
+            )
+        }
+    }
+}
+
 enum DateFormatters {
     static func relativeTime(from date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()

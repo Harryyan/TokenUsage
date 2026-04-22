@@ -112,14 +112,11 @@ final class UsageViewModel: ObservableObject {
         let now = Date()
         let totalSec = end.timeIntervalSince(start)
         let elapsedSec = max(0, now.timeIntervalSince(start))
-        let remainingSec = max(0, end.timeIntervalSince(now))
         let progress = totalSec > 0 ? min(1.0, elapsedSec / totalSec) : 0
 
         return ActiveBlock(
             startTime: start,
             endTime: end,
-            elapsedMinutes: Int(elapsedSec / 60),
-            remainingMinutes: Int(remainingSec / 60),
             progressPercent: progress,
             costUSD: block.costUSD,
             projectedCostUSD: block.projection?.totalCost,

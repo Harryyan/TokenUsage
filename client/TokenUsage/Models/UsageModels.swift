@@ -106,8 +106,6 @@ struct BlockProjection: Codable {
 struct ActiveBlock: Equatable {
     let startTime: Date
     let endTime: Date
-    let elapsedMinutes: Int
-    let remainingMinutes: Int
     let progressPercent: Double
     let costUSD: Double
     let projectedCostUSD: Double?
