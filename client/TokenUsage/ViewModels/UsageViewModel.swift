@@ -8,6 +8,7 @@ final class UsageViewModel: ObservableObject {
     @Published var refreshState: RefreshState = .idle
     @Published var selectedPeriod: TimePeriod = .today
     @Published var menuBarDisplayMode: MenuBarDisplayMode = .tokenOnly
+    @Published var activeBlock: ActiveBlock?
 
     @AppStorage("menuBarDisplayMode") private var storedDisplayMode: String = MenuBarDisplayMode.tokenOnly.rawValue
 
@@ -83,12 +84,47 @@ final class UsageViewModel: ObservableObject {
                 total: Self.buildPeriodUsage(from: allData.daily, periodDays: Self.totalDays(from: allData)),
                 lastUpdated: Date()
             )
+
+            activeBlock = try? await fetchActiveBlock()
+
             refreshState = .success
         } catch {
             refreshState = .failed(error.localizedDescription)
         }
 
         isRefreshing = false
+    }
+
+    private func fetchActiveBlock() async throws -> ActiveBlock? {
+        let response = try await service.fetchActiveBlock()
+        guard let block = response.blocks.first(where: { $0.isActive && !$0.isGap }) else {
+            return nil
+        }
+
+        let parser = ISO8601DateFormatter()
+        parser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        guard let start = parser.date(from: block.startTime),
+              let end = parser.date(from: block.endTime) else {
+            return nil
+        }
+
+        let now = Date()
+        let totalSec = end.timeIntervalSince(start)
+        let elapsedSec = max(0, now.timeIntervalSince(start))
+        let remainingSec = max(0, end.timeIntervalSince(now))
+        let progress = totalSec > 0 ? min(1.0, elapsedSec / totalSec) : 0
+
+        return ActiveBlock(
+            startTime: start,
+            endTime: end,
+            elapsedMinutes: Int(elapsedSec / 60),
+            remainingMinutes: Int(remainingSec / 60),
+            progressPercent: progress,
+            costUSD: block.costUSD,
+            projectedCostUSD: block.projection?.totalCost,
+            costPerHour: block.burnRate?.costPerHour
+        )
     }
 
     func setDisplayMode(_ mode: MenuBarDisplayMode) {

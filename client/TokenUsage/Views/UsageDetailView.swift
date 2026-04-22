@@ -12,6 +12,9 @@ struct UsageDetailView: View {
             PixelDivider()
             ScrollView {
                 VStack(spacing: 12) {
+                    if let block = viewModel.activeBlock {
+                        BlockCard(block: block)
+                    }
                     heroCard
                     if !viewModel.currentPeriodUsage.modelBreakdowns.isEmpty {
                         modelSection

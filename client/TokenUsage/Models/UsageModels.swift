@@ -76,6 +76,44 @@ struct UsageTotals: Codable {
     let totalTokens: Int
 }
 
+struct BlocksResponse: Codable {
+    let blocks: [BlockEntry]
+}
+
+struct BlockEntry: Codable {
+    let id: String
+    let startTime: String
+    let endTime: String
+    let isActive: Bool
+    let isGap: Bool
+    let totalTokens: Int
+    let costUSD: Double
+    let burnRate: BlockBurnRate?
+    let projection: BlockProjection?
+}
+
+struct BlockBurnRate: Codable {
+    let tokensPerMinute: Double
+    let costPerHour: Double
+}
+
+struct BlockProjection: Codable {
+    let totalTokens: Int
+    let totalCost: Double
+    let remainingMinutes: Int
+}
+
+struct ActiveBlock: Equatable {
+    let startTime: Date
+    let endTime: Date
+    let elapsedMinutes: Int
+    let remainingMinutes: Int
+    let progressPercent: Double
+    let costUSD: Double
+    let projectedCostUSD: Double?
+    let costPerHour: Double?
+}
+
 // MARK: - App Display Models
 
 struct UsageSnapshot {

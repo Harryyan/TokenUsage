@@ -47,6 +47,11 @@ actor CCUsageService {
         return try JSONDecoder().decode(DailyResponse.self, from: output)
     }
 
+    func fetchActiveBlock() async throws -> BlocksResponse {
+        let output = try await run(["ccusage", "blocks", "--json", "--active", "--offline"])
+        return try JSONDecoder().decode(BlocksResponse.self, from: output)
+    }
+
     private static func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd"
