@@ -31,6 +31,16 @@
         }
       }
     },
+    "RESETS IN" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "距离重置"
+          }
+        }
+      }
+    },
     "PROJECTED" : {
       "localizations" : {
         "zh-Hans" : {

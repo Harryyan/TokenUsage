@@ -9,13 +9,20 @@ struct BlockCard: View {
             PixelSectionHeader(text: "5H BLOCK")
 
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .center, spacing: 8) {
-                    progressBar
-                    Text(verbatim: "\(Int(block.progressPercent * 100))%")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundStyle(barColor)
-                        .frame(width: 40, alignment: .trailing)
+                HStack(spacing: 6) {
+                    Text("RESETS IN")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(theme.textMuted)
+                    Text(verbatim: "\(block.remainingMinutes)m")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundStyle(theme.accent)
+                    Spacer()
+                    Text(verbatim: "· \(resetClock)")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(theme.textDim)
                 }
+
+                progressBar
 
                 HStack(alignment: .top, spacing: 8) {
                     metricColumn(
@@ -30,16 +37,10 @@ struct BlockCard: View {
                             value: CostFormatter.standard(projected),
                             color: theme.textDim
                         )
-                        Spacer(minLength: 4)
                     }
-                    metricColumn(
-                        label: "LEFT",
-                        value: "\(block.remainingMinutes)m",
-                        color: barColor
-                    )
                 }
             }
-            .pixelFrame(accent: barColor.opacity(0.5))
+            .pixelFrame(accent: theme.accent.opacity(0.5))
         }
     }
 
@@ -59,22 +60,17 @@ struct BlockCard: View {
             ZStack(alignment: .leading) {
                 Rectangle().fill(theme.bg)
                 Rectangle()
-                    .fill(barColor)
+                    .fill(theme.accent)
                     .frame(width: max(geo.size.width * block.progressPercent, 0))
             }
         }
-        .frame(height: 10)
+        .frame(height: 6)
         .border(theme.borderDim, width: 1)
-        .padding(1)
-        .border(theme.borderBright, width: 1)
     }
 
-    private var barColor: Color {
-        switch block.progressPercent {
-        case ..<0.3: return theme.statusGreen
-        case ..<0.7: return theme.accent
-        case ..<0.9: return theme.cacheWrite
-        default: return theme.statusRed
-        }
+    private var resetClock: String {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f.string(from: block.endTime)
     }
 }
