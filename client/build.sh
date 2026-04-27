@@ -113,6 +113,18 @@ if [ -f "${XCSTRINGS}" ]; then
     touch "${RESOURCES_DIR}/en.lproj/Localizable.strings"
 fi
 
+# Copy bundled fonts (Doto, etc.)
+FONTS_SRC="${PROJECT_DIR}/TokenUsage/Resources"
+if [ -d "${FONTS_SRC}" ]; then
+    shopt -s nullglob
+    fonts=("${FONTS_SRC}"/*.ttf "${FONTS_SRC}"/*.otf)
+    if [ ${#fonts[@]} -gt 0 ]; then
+        echo "==> Copying ${#fonts[@]} font(s)..."
+        cp "${fonts[@]}" "${RESOURCES_DIR}/"
+    fi
+    shopt -u nullglob
+fi
+
 # Copy entitlements into Resources (for reference)
 if [ -f "${ENTITLEMENTS}" ]; then
     cp "${ENTITLEMENTS}" "${RESOURCES_DIR}/${APP_NAME}.entitlements"

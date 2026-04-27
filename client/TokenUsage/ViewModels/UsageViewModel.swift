@@ -41,6 +41,30 @@ final class UsageViewModel: ObservableObject {
         }
     }
 
+    var last7Days: [DailyDataPoint] {
+        let cal = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = Date()
+        var byDate: [String: DailyDataPoint] = [:]
+        for entry in snapshot.total.dailyData {
+            byDate[entry.date] = entry
+        }
+        var result: [DailyDataPoint] = []
+        for offset in (0..<7).reversed() {
+            guard let date = cal.date(byAdding: .day, value: -offset, to: today) else { continue }
+            let key = formatter.string(from: date)
+            result.append(byDate[key] ?? DailyDataPoint(date: key, tokens: 0, cost: 0))
+        }
+        return result
+    }
+
+    var last7DaysAvgCost: Double {
+        let nonEmpty = last7Days.filter { $0.cost > 0 }
+        guard !nonEmpty.isEmpty else { return 0 }
+        return nonEmpty.reduce(0) { $0 + $1.cost } / Double(nonEmpty.count)
+    }
+
     init() {
         if let mode = MenuBarDisplayMode(rawValue: storedDisplayMode) {
             menuBarDisplayMode = mode

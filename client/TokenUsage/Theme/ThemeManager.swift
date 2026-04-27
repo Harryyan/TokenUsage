@@ -1,36 +1,46 @@
 import SwiftUI
 import Combine
 
-final class ThemeManager: ObservableObject {
-    private static let storageKey = "selectedThemeID"
+enum AppearanceMode: String, CaseIterable, Identifiable {
+    case auto, light, dark
+    var id: String { rawValue }
+    var displayKey: LocalizedStringKey {
+        switch self {
+        case .auto: return "Auto"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+}
 
-    @Published var current: Theme
+@MainActor
+final class ThemeManager: ObservableObject {
+    private static let storageKey = "appearanceMode"
+
+    @Published var mode: AppearanceMode {
+        didSet { UserDefaults.standard.set(mode.rawValue, forKey: Self.storageKey) }
+    }
 
     init() {
-        let id = UserDefaults.standard.string(forKey: Self.storageKey) ?? Theme.pixelGold.id
-        self.current = Theme.withID(id)
+        let raw = UserDefaults.standard.string(forKey: Self.storageKey) ?? AppearanceMode.auto.rawValue
+        self.mode = AppearanceMode(rawValue: raw) ?? .auto
     }
 
-    func select(_ theme: Theme) {
-        current = theme
-        UserDefaults.standard.set(theme.id, forKey: Self.storageKey)
+    func palette(for systemScheme: ColorScheme) -> Palette {
+        let resolved: ColorScheme
+        switch mode {
+        case .auto: resolved = systemScheme
+        case .light: resolved = .light
+        case .dark: resolved = .dark
+        }
+        return resolved == .light ? .nothingLight : .nothingDark
     }
 
-    // MARK: Forwarded color slots (let views read `theme.bg` instead of `theme.current.bg`)
-
-    var bg: Color { current.bg }
-    var panel: Color { current.panel }
-    var borderBright: Color { current.borderBright }
-    var borderDim: Color { current.borderDim }
-    var text: Color { current.text }
-    var textDim: Color { current.textDim }
-    var textMuted: Color { current.textMuted }
-    var accent: Color { current.accent }
-    var statusGreen: Color { current.statusGreen }
-    var statusRed: Color { current.statusRed }
-    var statusAmber: Color { current.statusAmber }
-    var input: Color { current.input }
-    var output: Color { current.output }
-    var cacheWrite: Color { current.cacheWrite }
-    var cacheRead: Color { current.cacheRead }
+    var preferredColorScheme: ColorScheme? {
+        switch mode {
+        case .auto: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
 }

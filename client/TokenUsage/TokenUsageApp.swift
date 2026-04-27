@@ -7,6 +7,7 @@ struct TokenUsageApp: App {
 
     init() {
         AppLanguageManager.applyPreferredLanguageIfNeeded()
+        FontRegistration.registerBundledFonts()
     }
 
     var body: some Scene {

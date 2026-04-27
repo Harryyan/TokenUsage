@@ -1,80 +1,64 @@
 import SwiftUI
 
 struct BlockCard: View {
-    @EnvironmentObject var theme: ThemeManager
     let block: ActiveBlock
+    let palette: Palette
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            PixelSectionHeader(text: "5H BLOCK")
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                LabelText(text: "5H BLOCK", color: palette.textSecondary, tracking: 2)
+                Spacer()
+                Text(verbatim: "\(Int((block.progressPercent * 100).rounded()))% ELAPSED")
+                    .font(.spaceMono(10))
+                    .tracking(0.6)
+                    .foregroundStyle(palette.textDisabled)
+            }
 
-            VStack(alignment: .leading, spacing: 10) {
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    HStack(spacing: 6) {
-                        Text("RESETS IN")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundStyle(theme.textMuted)
-                        Text(verbatim: DurationFormatter.humanized(
-                            seconds: Int(max(0, block.endTime.timeIntervalSince(context.date)))
-                        ))
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundStyle(theme.accent)
-                        Spacer()
-                        Text(verbatim: "· \(resetClock)")
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundStyle(theme.textDim)
-                    }
-                }
-
-                progressBar
-
-                HStack(alignment: .top, spacing: 8) {
-                    metricColumn(
-                        label: "SPENT",
-                        value: CostFormatter.standard(block.costUSD),
-                        color: theme.text
+            VStack(spacing: 7) {
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    row(
+                        label: "RESETS IN",
+                        value: countdown(to: block.endTime, from: ctx.date),
+                        emphasize: true
                     )
-                    Spacer(minLength: 4)
-                    if let projected = block.projectedCostUSD {
-                        metricColumn(
-                            label: "PROJECTED",
-                            value: CostFormatter.standard(projected),
-                            color: theme.textDim
-                        )
-                    }
+                }
+                row(
+                    label: "SPENT",
+                    value: CostFormatter.standard(block.costUSD),
+                    emphasize: false
+                )
+                if let projected = block.projectedCostUSD {
+                    row(
+                        label: "PROJECTED",
+                        value: CostFormatter.standard(projected),
+                        emphasize: false
+                    )
                 }
             }
-            .pixelFrame(accent: theme.accent.opacity(0.5))
+
+            SegmentedBar(progress: block.progressPercent, palette: palette)
+                .padding(.top, 2)
         }
     }
 
-    private func metricColumn(label: LocalizedStringKey, value: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                .foregroundStyle(theme.textMuted)
+    private func row(label: LocalizedStringKey, value: String, emphasize: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            LabelText(text: label, color: palette.textSecondary, tracking: 1.4)
+            Spacer()
             Text(verbatim: value)
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .foregroundStyle(color)
+                .font(.spaceMono(emphasize ? 16 : 13, weight: emphasize ? .bold : .regular))
+                .tracking(emphasize ? 1.0 : 0)
+                .foregroundStyle(palette.textDisplay)
+                .monospacedDigit()
         }
     }
 
-    private var progressBar: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Rectangle().fill(theme.bg)
-                Rectangle()
-                    .fill(theme.accent)
-                    .frame(width: max(geo.size.width * block.progressPercent, 0))
-            }
-        }
-        .frame(height: 6)
-        .border(theme.borderDim, width: 1)
-    }
-
-    private var resetClock: String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f.string(from: block.endTime)
+    private func countdown(to end: Date, from now: Date) -> String {
+        let total = max(0, Int(end.timeIntervalSince(now)))
+        let h = total / 3600
+        let m = (total % 3600) / 60
+        let s = total % 60
+        return String(format: "%02d:%02d:%02d", h, m, s)
     }
 }

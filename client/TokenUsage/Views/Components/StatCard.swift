@@ -1,121 +1,126 @@
 import SwiftUI
 
-// MARK: - RPG Double-Border Frame
+// MARK: - ALL CAPS monospace label
 
-struct PixelFrame: ViewModifier {
-    @EnvironmentObject var theme: ThemeManager
-    var accent: Color? = nil
-
-    func body(content: Content) -> some View {
-        content
-            .padding(10)
-            .background(theme.panel)
-            .overlay(Rectangle().strokeBorder(theme.borderDim, lineWidth: 1))
-            .padding(2)
-            .overlay(Rectangle().strokeBorder(accent ?? theme.borderBright, lineWidth: 2))
-    }
-}
-
-extension View {
-    func pixelFrame(accent: Color? = nil) -> some View {
-        modifier(PixelFrame(accent: accent))
-    }
-}
-
-// MARK: - Pixel HP Bar
-
-struct PixelBar: View {
-    @EnvironmentObject var theme: ThemeManager
-
-    let input: Int
-    let output: Int
-    let cacheWrite: Int
-    let cacheRead: Int
-
-    private var total: Int { input + output + cacheWrite + cacheRead }
+struct LabelText: View {
+    let text: LocalizedStringKey
+    let color: Color
+    var size: CGFloat = 10
+    var tracking: CGFloat = 1.6
 
     var body: some View {
-        GeometryReader { geo in
-            if total == 0 {
-                Rectangle().fill(theme.borderDim)
-            } else {
-                HStack(spacing: 1) {
-                    segment(theme.input, count: input, width: geo.size.width)
-                    segment(theme.output, count: output, width: geo.size.width)
-                    segment(theme.cacheWrite, count: cacheWrite, width: geo.size.width)
-                    segment(theme.cacheRead, count: cacheRead, width: geo.size.width)
+        Text(text)
+            .font(.spaceMono(size))
+            .tracking(tracking)
+            .foregroundStyle(color)
+            .textCase(.uppercase)
+    }
+}
+
+// MARK: - Segmented progress bar
+
+struct SegmentedBar: View {
+    let progress: Double
+    let palette: Palette
+    var segments: Int = 24
+    var height: CGFloat = 8
+    var spacing: CGFloat = 2
+    var fill: Color? = nil
+
+    var body: some View {
+        let clamped = max(0, min(1, progress))
+        let filled = Int((Double(segments) * clamped).rounded())
+        HStack(spacing: spacing) {
+            ForEach(0..<segments, id: \.self) { i in
+                Rectangle()
+                    .fill(i < filled ? (fill ?? palette.textDisplay) : palette.barEmpty)
+            }
+        }
+        .frame(height: height)
+    }
+}
+
+// MARK: - 7-day mini bar chart
+
+struct MiniBarChart: View {
+    let data: [DailyDataPoint]
+    let palette: Palette
+    @Binding var hoveredIndex: Int?
+    var height: CGFloat = 44
+
+    var body: some View {
+        let maxVal = max(data.map(\.cost).max() ?? 0, 0.01)
+        HStack(alignment: .bottom, spacing: 4) {
+            ForEach(Array(data.enumerated()), id: \.offset) { idx, point in
+                let isLast = idx == data.count - 1
+                let isHovered = hoveredIndex == idx
+                let ratio = point.cost / maxVal
+                let barHeight = max(CGFloat(ratio) * height, 2)
+
+                ZStack(alignment: .bottom) {
+                    // Full-column hit area
+                    Rectangle()
+                        .fill(Color.clear)
+                        .contentShape(Rectangle())
+                    // Visible bar
+                    Rectangle()
+                        .fill(barColor(isLast: isLast, isHovered: isHovered))
+                        .frame(height: barHeight)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onHover { hovering in
+                    if hovering {
+                        hoveredIndex = idx
+                    } else if hoveredIndex == idx {
+                        hoveredIndex = nil
+                    }
                 }
             }
         }
-        .frame(height: 8)
-        .background(theme.bg)
-        .border(theme.borderDim, width: 1)
-        .padding(1)
-        .border(theme.borderBright, width: 1)
+        .frame(height: height)
     }
 
-    @ViewBuilder
-    private func segment(_ color: Color, count: Int, width: CGFloat) -> some View {
-        if count > 0 {
-            Rectangle()
-                .fill(color)
-                .frame(width: max(width * CGFloat(count) / CGFloat(total), 3))
+    private func barColor(isLast: Bool, isHovered: Bool) -> Color {
+        if isLast {
+            return isHovered ? palette.accent.opacity(0.6) : palette.accent
         }
+        return palette.textPrimary.opacity(isHovered ? 0.65 : 0.4)
     }
 }
 
-// MARK: - Pixel Divider
+// MARK: - Status dot (static; pulse driven by TimelineView when needed)
 
-struct PixelDivider: View {
-    @EnvironmentObject var theme: ThemeManager
-
-    var body: some View {
-        Rectangle()
-            .fill(theme.borderBright)
-            .frame(height: 2)
-    }
-}
-
-// MARK: - Token Breakdown Row
-
-struct TokenBreakdownRow: View {
-    @EnvironmentObject var theme: ThemeManager
-
-    let label: LocalizedStringKey
-    let tokens: Int
+struct StatusDot: View {
     let color: Color
+    var size: CGFloat = 6
+    var pulsing: Bool = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            Rectangle()
-                .fill(color)
-                .frame(width: 6, height: 6)
-            Text(label)
-                .foregroundStyle(theme.textDim)
-            Spacer()
-            Text(TokenFormatter.abbreviated(tokens))
-                .monospacedDigit()
-            Text(verbatim: "(\(TokenFormatter.precise(tokens)))")
-                .foregroundStyle(theme.textMuted)
+        Group {
+            if pulsing {
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+                    let t = ctx.date.timeIntervalSinceReferenceDate
+                    let phase = (sin(t * 2.4) + 1) / 2
+                    Circle()
+                        .fill(color)
+                        .frame(width: size, height: size)
+                        .opacity(0.55 + phase * 0.45)
+                }
+            } else {
+                Circle()
+                    .fill(color)
+                    .frame(width: size, height: size)
+            }
         }
-        .font(.system(size: 11, design: .monospaced))
+        .frame(width: size, height: size)
     }
 }
 
-// MARK: - Section Header
+// MARK: - Hairline divider
 
-struct PixelSectionHeader: View {
-    @EnvironmentObject var theme: ThemeManager
-
-    let text: LocalizedStringKey
-
+struct Hairline: View {
+    let color: Color
     var body: some View {
-        HStack(spacing: 6) {
-            Text(verbatim: ">>>")
-                .foregroundStyle(theme.accent)
-            Text(text)
-                .foregroundStyle(theme.textDim)
-        }
-        .font(.system(size: 10, weight: .bold, design: .monospaced))
+        Rectangle().fill(color).frame(height: 1)
     }
 }

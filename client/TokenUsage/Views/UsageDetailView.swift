@@ -1,298 +1,371 @@
 import SwiftUI
+import AppKit
 
 struct UsageDetailView: View {
     @ObservedObject var viewModel: UsageViewModel
     @EnvironmentObject var theme: ThemeManager
+    @Environment(\.colorScheme) private var systemScheme
+    @State private var hoveredBarIdx: Int?
+
+    private var palette: Palette { theme.palette(for: systemScheme) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            headerSection
-            PixelDivider()
-            periodTabs
-            PixelDivider()
-            ScrollView {
-                VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            titleRow
+                .padding(.bottom, 18)
+            periodNav
+                .padding(.bottom, 28)
+
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    hero
+                        .padding(.bottom, 24)
+
+                    if hasChartData {
+                        chart
+                            .padding(.bottom, 22)
+                    }
+
+                    breakdown
+                        .padding(.bottom, 20)
+
                     if let block = viewModel.activeBlock {
-                        BlockCard(block: block)
+                        Hairline(color: palette.border)
+                            .padding(.bottom, 20)
+                        BlockCard(block: block, palette: palette)
+                            .padding(.bottom, 20)
                     }
-                    heroCard
+
                     if !viewModel.currentPeriodUsage.modelBreakdowns.isEmpty {
-                        modelSection
-                    }
-                    if viewModel.selectedPeriod != .today {
-                        averageSection
+                        Hairline(color: palette.border)
+                            .padding(.bottom, 20)
+                        models
+                            .padding(.bottom, 14)
                     }
                 }
-                .padding(12)
             }
             .frame(maxHeight: 380)
-            PixelDivider()
-            footerSection
+
+            footer
         }
-        .frame(width: 360)
-        .background(theme.bg)
-        .foregroundStyle(theme.text)
+        .padding(.horizontal, 20)
+        .padding(.top, 22)
+        .padding(.bottom, 16)
+        .frame(width: 340)
+        .background(palette.bg)
+        .foregroundStyle(palette.textPrimary)
+        .preferredColorScheme(theme.preferredColorScheme)
     }
 
-    // MARK: - Header
+    // MARK: - Title row
 
-    private var headerSection: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(verbatim: "★")
-                        .foregroundStyle(theme.accent)
-                    Text("CLAUDE CODE USAGE")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                }
-                HStack(spacing: 5) {
-                    Text(verbatim: "●")
-                        .font(.system(size: 7))
-                        .foregroundStyle(statusColor)
-                    if viewModel.snapshot.lastUpdated != .distantPast {
-                        TimelineView(.periodic(from: .now, by: 60)) { _ in
-                            Text("Synced \(DateFormatters.relativeTime(from: viewModel.snapshot.lastUpdated))")
-                                .font(.system(size: 10, design: .monospaced))
-                                .foregroundStyle(theme.textMuted)
-                        }
-                    }
-                }
-            }
+    private var titleRow: some View {
+        HStack(spacing: 0) {
+            Text(verbatim: "TOKENUSAGE")
+                .font(.spaceMono(11, weight: .bold))
+                .tracking(2.6)
+                .foregroundStyle(palette.textSecondary)
+
             Spacer()
-            HStack(spacing: 6) {
-                pixelButton("↻") {
-                    Task { await viewModel.refresh() }
-                }
-                .disabled(viewModel.refreshState.isLoading)
 
-                Menu {
-                    ForEach(MenuBarDisplayMode.allCases, id: \.self) { mode in
-                        Button {
-                            viewModel.setDisplayMode(mode)
-                        } label: {
-                            if viewModel.menuBarDisplayMode == mode {
-                                Label(mode.displayKey, systemImage: "checkmark")
-                            } else {
-                                Text(mode.displayKey)
-                            }
-                        }
-                    }
-                    Divider()
-                    Menu("Theme") {
-                        ForEach(Theme.all) { t in
-                            Button {
-                                theme.select(t)
-                            } label: {
-                                if theme.current == t {
-                                    Label(t.displayKey, systemImage: "checkmark")
-                                } else {
-                                    Text(t.displayKey)
-                                }
-                            }
-                        }
-                    }
-                    Menu("Language") {
-                        ForEach(AppLanguage.allCases) { lang in
-                            Button {
-                                AppLanguageManager.setAndRelaunch(lang)
-                            } label: {
-                                if AppLanguageManager.current == lang {
-                                    Label(lang.displayKey, systemImage: "checkmark")
-                                } else {
-                                    Text(lang.displayKey)
-                                }
-                            }
-                        }
-                    }
-                    Divider()
-                    Button("Quit") { NSApplication.shared.terminate(nil) }
-                } label: {
-                    Text(verbatim: "⚙")
-                        .font(.system(size: 13))
-                        .foregroundStyle(theme.textDim)
-                        .frame(width: 24, height: 24)
-                        .background(theme.panel)
-                        .border(theme.borderDim, width: 1)
-                }
-                .buttonStyle(.plain)
-                .menuStyle(.borderlessButton)
+            settingsMenu
+                .padding(.trailing, 4)
+
+            Button {
+                Task { await viewModel.refresh() }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(palette.textPrimary)
+                    .frame(width: 26, height: 26)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .disabled(viewModel.refreshState.isLoading)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
     }
 
-    private func pixelButton(_ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(verbatim: label)
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundStyle(theme.textDim)
-                .frame(width: 24, height: 24)
-                .background(theme.panel)
-                .border(theme.borderDim, width: 1)
+    private var settingsMenu: some View {
+        Menu {
+            Picker("Display Mode", selection: Binding(
+                get: { viewModel.menuBarDisplayMode },
+                set: { viewModel.setDisplayMode($0) }
+            )) {
+                ForEach(MenuBarDisplayMode.allCases, id: \.self) { mode in
+                    Text(mode.displayKey).tag(mode)
+                }
+            }
+            .pickerStyle(.inline)
+
+            Picker("Appearance", selection: $theme.mode) {
+                ForEach(AppearanceMode.allCases) { m in
+                    Text(m.displayKey).tag(m)
+                }
+            }
+            .pickerStyle(.inline)
+
+            Picker("Language", selection: Binding(
+                get: { AppLanguageManager.current },
+                set: { AppLanguageManager.setAndRelaunch($0) }
+            )) {
+                ForEach(AppLanguage.allCases) { lang in
+                    Text(lang.displayKey).tag(lang)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(palette.textPrimary)
+                .frame(width: 26, height: 26)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .frame(width: 26)
     }
 
-    // MARK: - Period Tabs
+    // MARK: - Period nav
 
-    private var periodTabs: some View {
-        HStack(spacing: 0) {
+    private var periodNav: some View {
+        HStack(spacing: 18) {
             ForEach(TimePeriod.allCases, id: \.self) { period in
                 let active = viewModel.selectedPeriod == period
                 Button {
-                    withAnimation(.easeInOut(duration: 0.15)) {
+                    withAnimation(.easeOut(duration: 0.18)) {
                         viewModel.selectedPeriod = period
                     }
                 } label: {
-                    HStack(spacing: 4) {
-                        if active {
-                            Text(verbatim: "▶")
-                                .font(.system(size: 8))
-                                .foregroundStyle(theme.accent)
-                        }
+                    VStack(spacing: 6) {
                         Text(period.tabLabel)
-                            .font(.system(size: 11, weight: active ? .bold : .regular, design: .monospaced))
-                            .foregroundStyle(active ? theme.accent : theme.textDim)
+                            .font(.spaceMono(10, weight: .bold))
+                            .tracking(1.4)
+                            .foregroundStyle(active ? palette.textDisplay : palette.textDisabled)
+                            .textCase(.uppercase)
+                        Circle()
+                            .fill(active ? palette.accent : Color.clear)
+                            .frame(width: 4, height: 4)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
-                    .background(active ? theme.accent.opacity(0.08) : Color.clear)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
+            Spacer()
         }
-        .padding(.horizontal, 2)
     }
 
-    // MARK: - Hero Card
+    // MARK: - Hero
 
-    private var heroCard: some View {
+    private var hero: some View {
         let usage = viewModel.currentPeriodUsage
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                Text(verbatim: "$")
+                    .font(.doto(30))
+                    .foregroundStyle(palette.textDisplay)
+                    .padding(.trailing, 4)
+                Text(verbatim: heroAmount(usage.totalCost))
+                    .font(.doto(56))
+                    .foregroundStyle(palette.textDisplay)
+            }
 
-        return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Text(verbatim: "◆").foregroundStyle(theme.accent)
-                Text("COST").foregroundStyle(theme.accent.opacity(0.7))
-                Text(verbatim: "◆").foregroundStyle(theme.accent)
-                Spacer()
+                Text(verbatim: "\(TokenFormatter.abbreviated(usage.totalTokens)) TOKENS")
+                Text(verbatim: "·")
+                    .foregroundStyle(palette.textDisabled)
+                Text(viewModel.selectedPeriod.tabLabel)
             }
-            .font(.system(size: 10, weight: .bold, design: .monospaced))
-
-            Text(CostFormatter.standard(usage.totalCost))
-                .font(.system(size: 32, weight: .bold, design: .monospaced))
-                .foregroundStyle(theme.accent)
-                .shadow(color: theme.accent.opacity(0.4), radius: 12)
-
-            HStack {
-                Text(TokenFormatter.precise(usage.totalTokens))
-                    .foregroundStyle(theme.text)
-                Text("tokens")
-                    .foregroundStyle(theme.textDim)
-                Spacer()
-                Text(TokenFormatter.abbreviated(usage.totalTokens))
-                    .foregroundStyle(theme.textDim)
-            }
-            .font(.system(size: 12, design: .monospaced))
-
-            PixelBar(
-                input: usage.inputTokens,
-                output: usage.outputTokens,
-                cacheWrite: usage.cacheCreationTokens,
-                cacheRead: usage.cacheReadTokens
-            )
-            .padding(.vertical, 2)
-
-            VStack(spacing: 4) {
-                TokenBreakdownRow(label: "Input", tokens: usage.inputTokens, color: theme.input)
-                TokenBreakdownRow(label: "Output", tokens: usage.outputTokens, color: theme.output)
-                TokenBreakdownRow(label: "Cache W", tokens: usage.cacheCreationTokens, color: theme.cacheWrite)
-                TokenBreakdownRow(label: "Cache R", tokens: usage.cacheReadTokens, color: theme.cacheRead)
-            }
+            .font(.spaceMono(10))
+            .tracking(1.6)
+            .textCase(.uppercase)
+            .foregroundStyle(palette.textSecondary)
         }
-        .pixelFrame(accent: theme.accent.opacity(0.5))
+    }
+
+    private func heroAmount(_ cost: Double) -> String {
+        if cost >= 10_000 {
+            return String(format: "%.0fK", cost / 1_000)
+        } else if cost >= 1_000 {
+            return String(format: "%.1fK", cost / 1_000)
+        }
+        return String(format: "%.2f", cost)
+    }
+
+    // MARK: - 7-day chart
+
+    private var hasChartData: Bool {
+        viewModel.last7Days.contains(where: { $0.cost > 0 })
+    }
+
+    private var chart: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                chartLeftReadout
+                Spacer()
+                chartRightReadout
+            }
+            MiniBarChart(
+                data: viewModel.last7Days,
+                palette: palette,
+                hoveredIndex: $hoveredBarIdx
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var chartLeftReadout: some View {
+        if let idx = hoveredBarIdx, idx < viewModel.last7Days.count {
+            let point = viewModel.last7Days[idx]
+            let isToday = idx == viewModel.last7Days.count - 1
+            Text(verbatim: Self.weekdayLabel(point.date, isToday: isToday))
+                .font(.spaceMono(10))
+                .tracking(1.6)
+                .foregroundStyle(palette.textPrimary)
+        } else {
+            LabelText(text: "7-DAY", color: palette.textSecondary, tracking: 1.6)
+        }
+    }
+
+    @ViewBuilder
+    private var chartRightReadout: some View {
+        if let idx = hoveredBarIdx, idx < viewModel.last7Days.count {
+            let point = viewModel.last7Days[idx]
+            HStack(spacing: 8) {
+                Text(verbatim: TokenFormatter.abbreviated(point.tokens))
+                    .foregroundStyle(palette.textDisabled)
+                Text(verbatim: CostFormatter.standard(point.cost))
+                    .foregroundStyle(palette.textPrimary)
+            }
+            .font(.spaceMono(10))
+            .tracking(0.4)
+        } else {
+            Text(verbatim: "AVG \(CostFormatter.standard(viewModel.last7DaysAvgCost))")
+                .font(.spaceMono(10))
+                .tracking(0.4)
+                .foregroundStyle(palette.textDisabled)
+        }
+    }
+
+    private static func weekdayLabel(_ dateStr: String, isToday: Bool) -> String {
+        if isToday { return "TODAY" }
+        let parser = DateFormatter()
+        parser.dateFormat = "yyyy-MM-dd"
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "EEE d"
+        if let date = parser.date(from: dateStr) {
+            return formatter.string(from: date).uppercased()
+        }
+        return dateStr.uppercased()
+    }
+
+    // MARK: - Breakdown
+
+    private var breakdown: some View {
+        let usage = viewModel.currentPeriodUsage
+        return VStack(spacing: 9) {
+            statRow("Input", value: TokenFormatter.abbreviated(usage.inputTokens))
+            statRow("Output", value: TokenFormatter.abbreviated(usage.outputTokens))
+            statRow("Cache Write", value: TokenFormatter.abbreviated(usage.cacheCreationTokens))
+            statRow("Cache Read", value: TokenFormatter.abbreviated(usage.cacheReadTokens))
+        }
+    }
+
+    private func statRow(_ label: LocalizedStringKey, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            LabelText(text: label, color: palette.textSecondary, tracking: 1.4)
+            Spacer()
+            Text(verbatim: value)
+                .font(.spaceMono(12))
+                .foregroundStyle(palette.textPrimary)
+                .monospacedDigit()
+        }
     }
 
     // MARK: - Models
 
-    private var modelSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            PixelSectionHeader(text: "MODELS")
-
-            VStack(spacing: 4) {
-                ForEach(viewModel.currentPeriodUsage.modelBreakdowns) { b in
-                    let total = b.inputTokens + b.outputTokens
-                        + b.cacheCreationTokens + b.cacheReadTokens
-                    HStack {
-                        Text(Self.shortModelName(b.modelName))
-                            .lineLimit(1)
-                        Spacer()
-                        Text(TokenFormatter.abbreviated(total))
-                            .monospacedDigit()
-                        Text(CostFormatter.standard(b.cost))
-                            .foregroundStyle(theme.accent.opacity(0.7))
-                            .frame(width: 64, alignment: .trailing)
-                    }
-                    .font(.system(size: 11, design: .monospaced))
+    private var models: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            LabelText(text: "MODELS", color: palette.textSecondary, tracking: 1.8)
+                .padding(.bottom, 4)
+            ForEach(Array(viewModel.currentPeriodUsage.modelBreakdowns.prefix(5).enumerated()), id: \.element.id) { idx, b in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Rectangle()
+                        .fill(palette.textDisplay)
+                        .opacity(idx == 0 ? 1.0 : (idx == 1 ? 0.55 : 0.28))
+                        .frame(width: 6, height: 6)
+                    Text(Self.shortModelName(b.modelName))
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(palette.textPrimary)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(verbatim: CostFormatter.standard(b.cost))
+                        .font(.spaceMono(13))
+                        .foregroundStyle(palette.textDisplay)
+                        .monospacedDigit()
                 }
             }
-            .pixelFrame()
-        }
-    }
-
-    // MARK: - Average
-
-    private var averageSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            PixelSectionHeader(text: "DAILY AVG")
-
-            HStack {
-                HStack(spacing: 4) {
-                    Text(verbatim: "#").foregroundStyle(theme.input)
-                    Text(TokenFormatter.abbreviated(viewModel.currentPeriodUsage.averageDailyTokens))
-                }
-                Spacer()
-                HStack(spacing: 4) {
-                    Text(verbatim: "$").foregroundStyle(theme.accent)
-                    Text(CostFormatter.standard(viewModel.currentPeriodUsage.averageDailyCost))
-                }
-            }
-            .font(.system(size: 12, weight: .medium, design: .monospaced))
-            .pixelFrame()
         }
     }
 
     // MARK: - Footer
 
-    private var footerSection: some View {
-        HStack(spacing: 6) {
-            Text(verbatim: "★").foregroundStyle(theme.accent)
-            Text("LIFETIME").foregroundStyle(theme.textMuted)
-            Spacer()
-            Text(TokenFormatter.abbreviated(viewModel.snapshot.total.totalTokens))
-                .foregroundStyle(theme.textDim)
-            Text(verbatim: "·").foregroundStyle(theme.textMuted)
-            Text(CostFormatter.standard(viewModel.snapshot.total.totalCost))
-                .foregroundStyle(theme.accent.opacity(0.7))
+    private var footer: some View {
+        VStack(spacing: 0) {
+            Hairline(color: palette.border)
+            HStack {
+                HStack(spacing: 7) {
+                    StatusDot(
+                        color: statusColor,
+                        size: 6,
+                        pulsing: viewModel.refreshState == .success
+                    )
+                    if viewModel.snapshot.lastUpdated != .distantPast {
+                        TimelineView(.periodic(from: .now, by: 60)) { _ in
+                            Text("Synced \(DateFormatters.relativeTime(from: viewModel.snapshot.lastUpdated))")
+                                .font(.spaceMono(9))
+                                .tracking(1.6)
+                                .textCase(.uppercase)
+                                .foregroundStyle(palette.textDisabled)
+                        }
+                    } else {
+                        Text(verbatim: "INITIALIZING")
+                            .font(.spaceMono(9))
+                            .tracking(1.6)
+                            .foregroundStyle(palette.textDisabled)
+                    }
+                }
+                Spacer()
+                Button {
+                    NSApplication.shared.terminate(nil)
+                } label: {
+                    Text("Quit")
+                        .font(.spaceMono(9))
+                        .tracking(2.0)
+                        .foregroundStyle(palette.textSecondary)
+                        .textCase(.uppercase)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 12)
         }
-        .font(.system(size: 11, weight: .medium, design: .monospaced))
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
     }
 
     // MARK: - Helpers
 
     private var statusColor: Color {
         switch viewModel.refreshState {
-        case .success: return theme.statusGreen
-        case .failed: return theme.statusRed
-        case .loading, .refreshing: return theme.statusAmber
-        case .idle: return theme.textMuted
+        case .success: return palette.accent
+        case .failed: return palette.error
+        case .loading, .refreshing: return palette.warning
+        case .idle: return palette.textDisabled
         }
     }
 
     private static func shortModelName(_ name: String) -> String {
-        name.replacingOccurrences(of: "claude-", with: "")
+        name
+            .replacingOccurrences(of: "claude-", with: "")
             .replacingOccurrences(of: "-20251001", with: "")
     }
 }

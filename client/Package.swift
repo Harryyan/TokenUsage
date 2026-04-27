@@ -10,7 +10,7 @@ let package = Package(
         .executableTarget(
             name: "TokenUsage",
             path: "TokenUsage",
-            exclude: ["Info.plist"]
+            exclude: ["Info.plist", "Resources"]
         )
     ]
 )

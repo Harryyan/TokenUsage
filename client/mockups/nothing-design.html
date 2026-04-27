@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>TokenUsage · Nothing Design Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@400;700;900&family=Space+Grotesk:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --mint: #7FE0A8;
+      --mint-soft: rgba(127, 224, 168, 0.18);
+    }
+    .dark {
+      --bg: #050505;
+      --surface: #0F0F0F;
+      --surface-raised: #161616;
+      --border: #1E1E1E;
+      --border-visible: #2C2C2C;
+      --text-disabled: #5C5C5C;
+      --text-secondary: #8F8F8F;
+      --text-primary: #E5E5E5;
+      --text-display: #FFFFFF;
+      --bar-empty: #1C1C1C;
+      --mint-text: #7FE0A8;
+      --mint-pill-bg: rgba(127, 224, 168, 0.16);
+    }
+    .light {
+      --bg: #EFEDE6;
+      --surface: #F7F5EE;
+      --surface-raised: #FFFFFF;
+      --border: #DCD9CF;
+      --border-visible: #C7C3B6;
+      --text-disabled: #ABA89D;
+      --text-secondary: #807D72;
+      --text-primary: #1F1E1A;
+      --text-display: #0A0A08;
+      --bar-empty: #DCD9CF;
+      --mint-text: #2C8A5A;
+      --mint-pill-bg: rgba(64, 168, 110, 0.18);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      background: #1f1d1a;
+      color: #e5e5e5;
+      min-height: 100vh;
+      padding: 64px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 56px;
+    }
+
+    .page-label {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #6e6c66;
+    }
+
+    .stage {
+      display: flex;
+      gap: 56px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .stage-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .stage-label {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #8a8780;
+    }
+
+    /* ============ POPOVER ============ */
+    .popover {
+      width: 340px;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: "Space Grotesk", sans-serif;
+      padding: 22px 20px 18px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Subtle dot-matrix wash */
+    .popover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, var(--border-visible) 0.6px, transparent 0.6px);
+      background-size: 14px 14px;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .popover > * { position: relative; z-index: 1; }
+
+    /* Title row */
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .app-title {
+      font-family: "Space Mono", monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .icon-btn {
+      width: 26px;
+      height: 26px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-family: "Space Mono", monospace;
+      font-size: 13px;
+      transition: color 200ms ease-out;
+    }
+    .icon-btn:hover { color: var(--text-display); }
+
+    /* Period nav with mint dot active indicator */
+    .period-nav {
+      display: flex;
+      gap: 18px;
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+    .period-nav .item {
+      color: var(--text-disabled);
+      cursor: pointer;
+      position: relative;
+      padding-bottom: 8px;
+      transition: color 200ms ease-out;
+    }
+    .period-nav .item:hover { color: var(--text-secondary); }
+    .period-nav .item.active {
+      color: var(--text-display);
+    }
+    .period-nav .item.active::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 6px rgba(127, 224, 168, 0.5);
+    }
+
+    /* Hero — primary layer */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 28px;
+    }
+    .hero-cost {
+      font-family: "Doto", "Space Mono", monospace;
+      font-weight: 900;
+      font-size: 64px;
+      line-height: 0.95;
+      letter-spacing: -0.01em;
+      color: var(--text-display);
+    }
+    .hero-cost .currency {
+      font-size: 30px;
+      vertical-align: top;
+      letter-spacing: 0;
+      margin-right: 2px;
+    }
+    .hero-tokens {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    /* 7-day mini chart — the "instrument" moment */
+    .chart {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .chart-label {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .chart-meta {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      color: var(--text-disabled);
+    }
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 44px;
+    }
+    .chart-bars .bar {
+      flex: 1;
+      background: var(--text-primary);
+      opacity: 0.45;
+      border-radius: 1px;
+      transition: opacity 200ms ease-out;
+    }
+    .chart-bars .bar.today {
+      opacity: 1;
+      background: var(--mint);
+    }
+    .chart-axis {
+      display: flex;
+      justify-content: space-between;
+      font-family: "Space Mono", monospace;
+      font-size: 9px;
+      color: var(--text-disabled);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* Breakdown rows */
+    .breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      margin-bottom: 24px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .row-label {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .row-value {
+      font-family: "Space Mono", monospace;
+      font-size: 12px;
+      color: var(--text-primary);
+      letter-spacing: 0;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 0 22px;
+    }
+
+    /* 5H block — segmented bar */
+    .block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .block-label {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .block-pct {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      color: var(--text-disabled);
+      letter-spacing: 0.04em;
+    }
+    .block-data {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      row-gap: 7px;
+      align-items: center;
+    }
+    .block-data .key {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .block-data .val {
+      font-family: "Space Mono", monospace;
+      font-size: 13px;
+      color: var(--text-display);
+      text-align: right;
+    }
+    .block-data .val.countdown {
+      font-size: 16px;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }
+    .block-bar {
+      display: flex;
+      gap: 2px;
+      height: 8px;
+      margin-top: 2px;
+    }
+    .block-bar .seg {
+      flex: 1;
+      background: var(--bar-empty);
+    }
+    .block-bar .seg.on { background: var(--text-display); }
+
+    /* Models */
+    .models {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      margin-bottom: 22px;
+    }
+    .models-label {
+      font-family: "Space Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    .model-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .model-name {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 13px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: 0;
+    }
+    .model-name .mark {
+      width: 6px;
+      height: 6px;
+      background: var(--text-display);
+    }
+    .model-name .mark.m2 { opacity: 0.55; }
+    .model-name .mark.m3 { opacity: 0.28; }
+    .model-cost {
+      font-family: "Space Mono", monospace;
+      font-size: 13px;
+      color: var(--text-display);
+    }
+
+    /* Footer */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .footer-status {
+      font-family: "Space Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-disabled);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--mint);
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(127, 224, 168, 0.6);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    .footer-action {
+      font-family: "Space Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      transition: color 200ms ease-out;
+    }
+    .footer-action:hover { color: var(--text-display); }
+
+    /* ---- MENU BAR LABEL DEMOS ---- */
+    .menubar-row {
+      display: flex;
+      gap: 28px;
+    }
+    .menubar-demo {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 5px 12px;
+      background: rgba(0,0,0,0.85);
+      border: 1px solid #2c2c2c;
+      border-radius: 4px;
+      font-family: "Space Mono", monospace;
+      font-size: 12px;
+      color: #fff;
+      letter-spacing: 0.05em;
+    }
+    .menubar-demo.light-bar {
+      background: #f0eee5;
+      color: #1a1a1a;
+      border-color: #c7c3b6;
+    }
+    .menubar-demo .diamond {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--mint);
+      transform: rotate(45deg);
+      margin-right: 10px;
+    }
+
+    .footnote {
+      max-width: 760px;
+      font-family: "Space Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: #908d85;
+      line-height: 1.7;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-label">tokenusage · nothing-design v2 · 2026-04-27</div>
+
+  <!-- Menu bar demos -->
+  <div class="stage-col">
+    <div class="stage-label">menu bar label</div>
+    <div class="menubar-row">
+      <div class="menubar-demo">
+        <span class="diamond"></span>
+        <span>1.25M&nbsp;&nbsp;·&nbsp;&nbsp;$12.30</span>
+      </div>
+      <div class="menubar-demo light-bar">
+        <span class="diamond"></span>
+        <span>1.25M&nbsp;&nbsp;·&nbsp;&nbsp;$12.30</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Side by side popovers -->
+  <div class="stage">
+
+    <!-- ============ DARK ============ -->
+    <div class="stage-col">
+      <div class="stage-label">popover · dark</div>
+      <div class="popover dark">
+
+        <div class="title-row">
+          <div class="app-title">TOKENUSAGE</div>
+          <button class="icon-btn" aria-label="refresh">↻</button>
+        </div>
+
+        <div class="period-nav">
+          <span class="item active">NOW</span>
+          <span class="item">WEEK</span>
+          <span class="item">MONTH</span>
+          <span class="item">ALL</span>
+        </div>
+
+        <div class="hero">
+          <div class="hero-cost"><span class="currency">$</span>12.30</div>
+          <div class="hero-tokens">1.25M TOKENS · TODAY</div>
+        </div>
+
+        <div class="chart">
+          <div class="chart-header">
+            <span class="chart-label">7-DAY</span>
+            <span class="chart-meta">AVG&nbsp;$9.42</span>
+          </div>
+          <div class="chart-bars">
+            <span class="bar" style="height:38%"></span>
+            <span class="bar" style="height:62%"></span>
+            <span class="bar" style="height:50%"></span>
+            <span class="bar" style="height:84%"></span>
+            <span class="bar" style="height:71%"></span>
+            <span class="bar" style="height:46%"></span>
+            <span class="bar today" style="height:92%"></span>
+          </div>
+          <div class="chart-axis">
+            <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>TODAY</span>
+          </div>
+        </div>
+
+        <div class="breakdown">
+          <div class="row"><span class="row-label">INPUT</span><span class="row-value">245K</span></div>
+          <div class="row"><span class="row-label">OUTPUT</span><span class="row-value">89K</span></div>
+          <div class="row"><span class="row-label">CACHE&nbsp;WRITE</span><span class="row-value">312K</span></div>
+          <div class="row"><span class="row-label">CACHE&nbsp;READ</span><span class="row-value">600K</span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="block">
+          <div class="block-header">
+            <span class="block-label">5H BLOCK</span>
+            <span class="block-pct">66% ELAPSED</span>
+          </div>
+          <div class="block-data">
+            <span class="key">RESETS&nbsp;IN</span>
+            <span class="val countdown">02:34:18</span>
+            <span class="key">SPENT</span>
+            <span class="val">$12.30</span>
+            <span class="key">PROJECTED</span>
+            <span class="val">$18.50</span>
+          </div>
+          <div class="block-bar">
+            <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+            <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+            <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+            <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+            <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+            <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="models">
+          <div class="models-label">MODELS</div>
+          <div class="model-row">
+            <span class="model-name"><span class="mark"></span>OPUS&nbsp;4.5</span>
+            <span class="model-cost">$8.20</span>
+          </div>
+          <div class="model-row">
+            <span class="model-name"><span class="mark m2"></span>SONNET&nbsp;4.6</span>
+            <span class="model-cost">$3.40</span>
+          </div>
+          <div class="model-row">
+            <span class="model-name"><span class="mark m3"></span>HAIKU&nbsp;4.5</span>
+            <span class="model-cost">$0.70</span>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="footer-status"><span class="status-dot"></span>SYNCED&nbsp;2M&nbsp;AGO</span>
+          <button class="footer-action">QUIT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LIGHT ============ -->
+    <div class="stage-col">
+      <div class="stage-label">popover · light</div>
+      <div class="popover light">
+
+        <div class="title-row">
+          <div class="app-title">TOKENUSAGE</div>
+          <button class="icon-btn" aria-label="refresh">↻</button>
+        </div>
+
+        <div class="period-nav">
+          <span class="item active">NOW</span>
+          <span class="item">WEEK</span>
+          <span class="item">MONTH</span>
+          <span class="item">ALL</span>
+        </div>
+
+        <div class="hero">
+          <div class="hero-cost"><span class="currency">$</span>12.30</div>
+          <div class="hero-tokens">1.25M TOKENS · TODAY</div>
+        </div>
+
+        <div class="chart">
+          <div class="chart-header">
+            <span class="chart-label">7-DAY</span>
+            <span class="chart-meta">AVG&nbsp;$9.42</span>
+          </div>
+          <div class="chart-bars">
+            <span class="bar" style="height:38%"></span>
+            <span class="bar" style="height:62%"></span>
+            <span class="bar" style="height:50%"></span>
+            <span class="bar" style="height:84%"></span>
+            <span class="bar" style="height:71%"></span>
+            <span class="bar" style="height:46%"></span>
+            <span class="bar today" style="height:92%"></span>
+          </div>
+          <div class="chart-axis">
+            <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>TODAY</span>
+          </div>
+        </div>
+
+        <div class="breakdown">
+          <div class="row"><span class="row-label">INPUT</span><span class="row-value">245K</span></div>
+          <div class="row"><span class="row-label">OUTPUT</span><span class="row-value">89K</span></div>
+          <div class="row"><span class="row-label">CACHE&nbsp;WRITE</span><span class="row-value">312K</span></div>
+          <div class="row"><span class="row-label">CACHE&nbsp;READ</span><span class="row-value">600K</span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="block">
+          <div class="block-header">
+            <span class="block-label">5H BLOCK</span>
+            <span class="block-pct">66% ELAPSED</span>
+          </div>
+          <div class="block-data">
+            <span class="key">RESETS&nbsp;IN</span>
+            <span class="val countdown">02:34:18</span>
+            <span class="key">SPENT</span>
+            <span class="val">$12.30</span>
+            <span class="key">PROJECTED</span>
+            <span class="val">$18.50</span>
+          </div>
+          <div class="block-bar">
+            <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+            <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+            <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+            <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+            <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+            <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="models">
+          <div class="models-label">MODELS</div>
+          <div class="model-row">
+            <span class="model-name"><span class="mark"></span>OPUS&nbsp;4.5</span>
+            <span class="model-cost">$8.20</span>
+          </div>
+          <div class="model-row">
+            <span class="model-name"><span class="mark m2"></span>SONNET&nbsp;4.6</span>
+            <span class="model-cost">$3.40</span>
+          </div>
+          <div class="model-row">
+            <span class="model-name"><span class="mark m3"></span>HAIKU&nbsp;4.5</span>
+            <span class="model-cost">$0.70</span>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="footer-status"><span class="status-dot"></span>SYNCED&nbsp;2M&nbsp;AGO</span>
+          <button class="footer-action">QUIT</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footnote">
+    PALETTE: warm cream (#EFEDE6) · oled-near black (#050505) · mint (#7FE0A8) as live/today/active signal.<br>
+    ONE BREAK: hero $12.30 in Doto. MINT EARNS ITS SLOTS: synced dot · today's bar · active tab indicator.
+  </div>
+
+</body>
+</html>

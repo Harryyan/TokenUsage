@@ -3,126 +3,71 @@
 import AppKit
 import CoreGraphics
 
+// Nothing-aesthetic app icon: warm dark squircle + mint twin-diamond mark.
+// Generates AppIcon.iconset under the client directory, ready for `iconutil -c icns`.
+
 func createIcon(size: Int) -> NSImage {
     let s = CGFloat(size)
     let image = NSImage(size: NSSize(width: s, height: s))
     image.lockFocus()
+    defer { image.unlockFocus() }
 
-    guard let ctx = NSGraphicsContext.current?.cgContext else {
-        image.unlockFocus()
-        return image
-    }
+    guard let ctx = NSGraphicsContext.current?.cgContext else { return image }
 
-    // Background: rounded rect with gradient
+    // --- Background: warm dark squircle ---
     let cornerRadius = s * 0.22
     let bgRect = CGRect(x: 0, y: 0, width: s, height: s)
     let bgPath = CGPath(roundedRect: bgRect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
 
     ctx.saveGState()
     ctx.addPath(bgPath)
-    ctx.clip()
-
-    let colorSpace = CGColorSpaceCreateDeviceRGB()
-    let gradientColors = [
-        CGColor(red: 0.15, green: 0.15, blue: 0.22, alpha: 1.0),
-        CGColor(red: 0.08, green: 0.08, blue: 0.14, alpha: 1.0)
-    ] as CFArray
-    let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: [0.0, 1.0])!
-    ctx.drawLinearGradient(gradient, start: CGPoint(x: 0, y: s), end: CGPoint(x: s, y: 0), options: [])
+    ctx.setFillColor(CGColor(red: 0x1A/255.0, green: 0x1A/255.0, blue: 0x18/255.0, alpha: 1.0))
+    ctx.fillPath()
     ctx.restoreGState()
 
-    // Diamond shape (◈) - outer
+    // --- Twin diamond mark (mint), centered ---
     let cx = s / 2
     let cy = s / 2
-    let diamondSize = s * 0.32
+    let outerR = s * 0.30
+    let innerR = s * 0.13
+    let strokeOuter = max(s * 0.028, 1)
+    let strokeInner = max(s * 0.022, 1)
+    let mint = CGColor(red: 0x7F/255.0, green: 0xE0/255.0, blue: 0xA8/255.0, alpha: 1.0)
 
-    let diamondPath = CGMutablePath()
-    diamondPath.move(to: CGPoint(x: cx, y: cy + diamondSize))      // top
-    diamondPath.addLine(to: CGPoint(x: cx + diamondSize, y: cy))    // right
-    diamondPath.addLine(to: CGPoint(x: cx, y: cy - diamondSize))    // bottom
-    diamondPath.addLine(to: CGPoint(x: cx - diamondSize, y: cy))    // left
-    diamondPath.closeSubpath()
-
-    // Diamond glow
-    ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: 0), blur: s * 0.08, color: CGColor(red: 0.45, green: 0.65, blue: 1.0, alpha: 0.6))
-    ctx.setLineWidth(s * 0.02)
-    ctx.setStrokeColor(CGColor(red: 0.5, green: 0.7, blue: 1.0, alpha: 0.8))
-    ctx.addPath(diamondPath)
-    ctx.strokePath()
-    ctx.restoreGState()
-
-    // Diamond fill with gradient
-    ctx.saveGState()
-    ctx.addPath(diamondPath)
-    ctx.clip()
-
-    let diamondGradientColors = [
-        CGColor(red: 0.40, green: 0.60, blue: 1.0, alpha: 0.9),
-        CGColor(red: 0.55, green: 0.75, blue: 1.0, alpha: 0.7),
-        CGColor(red: 0.35, green: 0.50, blue: 0.95, alpha: 0.85)
-    ] as CFArray
-    let diamondGradient = CGGradient(colorsSpace: colorSpace, colors: diamondGradientColors, locations: [0.0, 0.5, 1.0])!
-    ctx.drawLinearGradient(diamondGradient, start: CGPoint(x: cx - diamondSize, y: cy + diamondSize), end: CGPoint(x: cx + diamondSize, y: cy - diamondSize), options: [])
-    ctx.restoreGState()
-
-    // Diamond border
-    ctx.setLineWidth(s * 0.015)
-    ctx.setStrokeColor(CGColor(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.9))
-    ctx.addPath(diamondPath)
-    ctx.strokePath()
-
-    // Inner diamond (hollow center like ◈)
-    let innerSize = diamondSize * 0.45
-    let innerPath = CGMutablePath()
-    innerPath.move(to: CGPoint(x: cx, y: cy + innerSize))
-    innerPath.addLine(to: CGPoint(x: cx + innerSize, y: cy))
-    innerPath.addLine(to: CGPoint(x: cx, y: cy - innerSize))
-    innerPath.addLine(to: CGPoint(x: cx - innerSize, y: cy))
-    innerPath.closeSubpath()
-
-    ctx.setLineWidth(s * 0.012)
-    ctx.setStrokeColor(CGColor(red: 0.9, green: 0.95, blue: 1.0, alpha: 0.95))
-    ctx.addPath(innerPath)
-    ctx.strokePath()
-
-    // Small bars below diamond (representing usage/data)
-    let barY = cy - diamondSize - s * 0.1
-    let barHeight = s * 0.025
-    let barSpacing = s * 0.04
-    let barWidths: [CGFloat] = [0.35, 0.25, 0.18]
-
-    for (i, width) in barWidths.enumerated() {
-        let barW = s * width
-        let y = barY - CGFloat(i) * barSpacing
-        let barRect = CGRect(x: cx - barW / 2, y: y, width: barW, height: barHeight)
-        let barPath = CGPath(roundedRect: barRect, cornerWidth: barHeight / 2, cornerHeight: barHeight / 2, transform: nil)
-
-        let alpha = 0.6 - Double(i) * 0.15
-        ctx.setFillColor(CGColor(red: 0.5, green: 0.7, blue: 1.0, alpha: alpha))
-        ctx.addPath(barPath)
-        ctx.fillPath()
+    func diamond(at center: CGPoint, radius: CGFloat) -> CGPath {
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: center.x, y: center.y + radius))
+        path.addLine(to: CGPoint(x: center.x + radius, y: center.y))
+        path.addLine(to: CGPoint(x: center.x, y: center.y - radius))
+        path.addLine(to: CGPoint(x: center.x - radius, y: center.y))
+        path.closeSubpath()
+        return path
     }
 
-    // "T" text at top (for Token)
-    let fontSize = s * 0.11
-    let font = CTFontCreateWithName("SF Pro Display Heavy" as CFString, fontSize, nil)
-    let attributes: [NSAttributedString.Key: Any] = [
-        .font: font,
-        .foregroundColor: NSColor(red: 0.7, green: 0.85, blue: 1.0, alpha: 0.7)
-    ]
-    let text = NSAttributedString(string: "T", attributes: attributes)
-    let textSize = text.size()
-    let textX = cx - textSize.width / 2
-    let textY = cy + diamondSize + s * 0.06
-    text.draw(at: NSPoint(x: textX, y: textY))
+    ctx.saveGState()
+    ctx.setStrokeColor(mint)
+    ctx.setLineJoin(.miter)
+    ctx.setLineCap(.butt)
 
-    image.unlockFocus()
+    // Outer diamond
+    ctx.setLineWidth(strokeOuter)
+    ctx.addPath(diamond(at: CGPoint(x: cx, y: cy), radius: outerR))
+    ctx.strokePath()
+
+    // Inner diamond
+    ctx.setLineWidth(strokeInner)
+    ctx.addPath(diamond(at: CGPoint(x: cx, y: cy), radius: innerR))
+    ctx.strokePath()
+    ctx.restoreGState()
+
     return image
 }
 
 func createIconset() {
-    let iconsetPath = "/Users/mega-hy/Desktop/Harry/Projects/TokenUsage/AppIcon.iconset"
+    let scriptDir = (CommandLine.arguments[0] as NSString).deletingLastPathComponent
+    let baseDir = scriptDir.isEmpty ? FileManager.default.currentDirectoryPath : scriptDir
+    let iconsetPath = "\(baseDir)/AppIcon.iconset"
+
     let fm = FileManager.default
     try? fm.removeItem(atPath: iconsetPath)
     try! fm.createDirectory(atPath: iconsetPath, withIntermediateDirectories: true)
@@ -154,7 +99,7 @@ func createIconset() {
     }
 
     print("\nIconset created at: \(iconsetPath)")
-    print("Run: iconutil -c icns AppIcon.iconset")
+    print("Run: iconutil -c icns \(iconsetPath) -o \(baseDir)/AppIcon.icns")
 }
 
 createIconset()
