@@ -97,6 +97,8 @@ cat > "${CONTENTS_DIR}/Info.plist" <<PLIST
 	<array>
 		<string>en</string>
 		<string>zh-Hans</string>
+		<string>es</string>
+		<string>vi</string>
 	</array>
 </dict>
 </plist>

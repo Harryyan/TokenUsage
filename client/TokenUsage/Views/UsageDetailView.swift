@@ -104,15 +104,17 @@ struct UsageDetailView: View {
             }
             .pickerStyle(.inline)
 
-            Picker("Language", selection: Binding(
-                get: { AppLanguageManager.current },
-                set: { AppLanguageManager.setAndRelaunch($0) }
-            )) {
-                ForEach(AppLanguage.allCases) { lang in
-                    Text(lang.displayKey).tag(lang)
+            Menu("Language") {
+                Picker("Language", selection: Binding(
+                    get: { AppLanguageManager.current },
+                    set: { AppLanguageManager.setAndRelaunch($0) }
+                )) {
+                    ForEach(AppLanguage.allCases) { lang in
+                        Text(lang.displayKey).tag(lang)
+                    }
                 }
+                .pickerStyle(.inline)
             }
-            .pickerStyle(.inline)
         } label: {
             Image(systemName: "gearshape")
                 .font(.system(size: 13, weight: .medium))
