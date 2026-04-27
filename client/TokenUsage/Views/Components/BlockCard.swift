@@ -59,13 +59,6 @@ struct BlockCard: View {
         liveUsage?.fiveHourResetAt ?? block.endTime
     }
 
-    private var statusForBar: BlockUsageStatus {
-        guard let pct = fivePercent else { return .ok }
-        if pct >= 100 { return .exceeded }
-        if pct >= 80 { return .warning }
-        return .ok
-    }
-
     private var headerSuffix: String {
         if let pct = fivePercent {
             return "\(Int(pct.rounded()))% USED"
@@ -74,11 +67,8 @@ struct BlockCard: View {
     }
 
     private var headerColor: Color {
-        switch statusForBar {
-        case .ok: return palette.textDisabled
-        case .warning: return palette.warning
-        case .exceeded: return palette.error
-        }
+        guard let pct = fivePercent else { return palette.textDisabled }
+        return palette.accentForUsage(pct, defaultColor: palette.textDisabled)
     }
 
     private var barProgress: Double {
@@ -87,11 +77,8 @@ struct BlockCard: View {
     }
 
     private var barColor: Color {
-        switch statusForBar {
-        case .ok: return palette.textDisplay
-        case .warning: return palette.warning
-        case .exceeded: return palette.error
-        }
+        guard let pct = fivePercent else { return palette.accent }
+        return palette.accentForUsage(pct, defaultColor: palette.accent)
     }
 
     // MARK: - Row helper
@@ -153,26 +140,12 @@ struct WeeklyRow: View {
         }
     }
 
-    private var status: BlockUsageStatus {
-        if limits.sevenDayPercent >= 100 { return .exceeded }
-        if limits.sevenDayPercent >= 80 { return .warning }
-        return .ok
-    }
-
     private var headerColor: Color {
-        switch status {
-        case .ok: return palette.textDisabled
-        case .warning: return palette.warning
-        case .exceeded: return palette.error
-        }
+        palette.accentForUsage(limits.sevenDayPercent, defaultColor: palette.textDisabled)
     }
 
     private var barColor: Color {
-        switch status {
-        case .ok: return palette.textDisplay
-        case .warning: return palette.warning
-        case .exceeded: return palette.error
-        }
+        palette.accentForUsage(limits.sevenDayPercent, defaultColor: palette.accent)
     }
 
     private func relative(to target: Date, from now: Date) -> String {

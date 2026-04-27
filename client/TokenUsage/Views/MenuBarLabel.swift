@@ -6,7 +6,7 @@ struct MenuBarLabel: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(nsImage: MenuBarIcon.image(for: iconState))
+            Image(nsImage: MenuBarIcon.image(color: iconColor))
             Text(labelText)
                 .font(.system(size: 12, weight: .regular, design: .monospaced))
                 .monospacedDigit()
@@ -23,26 +23,49 @@ struct MenuBarLabel: View {
         }
     }
 
-    private var iconState: MenuBarIcon.State {
+    /// Diamond color: failure / loading states win; otherwise reflects current
+    /// 5-hour usage with the same traffic-light bands as the popover bars.
+    private var iconColor: NSColor {
         switch viewModel.refreshState {
-        case .failed: return .failed
-        case .loading, .refreshing: return .loading
-        default: return .normal
+        case .failed: return MenuBarColors.red
+        case .loading, .refreshing: return MenuBarColors.amber
+        default:
+            return MenuBarColors.forUsage(viewModel.currentUsagePercent)
         }
     }
 }
 
+private enum MenuBarColors {
+    static let mint = NSColor(red: 127/255, green: 224/255, blue: 168/255, alpha: 1)
+    static let amber = NSColor(red: 212/255, green: 168/255, blue: 67/255, alpha: 1)
+    static let red = NSColor(red: 215/255, green: 25/255, blue: 33/255, alpha: 1)
+
+    static func forUsage(_ percent: Double?) -> NSColor {
+        guard let p = percent else { return mint }
+        if p >= 85 { return red }
+        if p >= 60 { return amber }
+        return mint
+    }
+}
+
 enum MenuBarIcon {
-    enum State { case normal, loading, failed }
+    private static var cache: [UInt32: NSImage] = [:]
+    private static let lock = NSLock()
 
-    private static let cache: [State: NSImage] = [
-        .normal: makeImage(color: NSColor(red: 127/255, green: 224/255, blue: 168/255, alpha: 1)),
-        .loading: makeImage(color: NSColor(red: 212/255, green: 168/255, blue: 67/255, alpha: 1)),
-        .failed: makeImage(color: NSColor(red: 215/255, green: 25/255, blue: 33/255, alpha: 1))
-    ]
+    static func image(color: NSColor) -> NSImage {
+        let key = color.rgbKey
+        lock.lock()
+        if let cached = cache[key] {
+            lock.unlock()
+            return cached
+        }
+        lock.unlock()
 
-    static func image(for state: State) -> NSImage {
-        cache[state] ?? cache[.normal]!
+        let img = makeImage(color: color)
+        lock.lock()
+        cache[key] = img
+        lock.unlock()
+        return img
     }
 
     private static func makeImage(color: NSColor) -> NSImage {
@@ -61,5 +84,16 @@ enum MenuBarIcon {
         }
         image.isTemplate = false
         return image
+    }
+}
+
+private extension NSColor {
+    /// Pack 8-bit RGB into a single UInt32 for cache keying.
+    var rgbKey: UInt32 {
+        let resolved = self.usingColorSpace(.deviceRGB) ?? self
+        let r = UInt32((resolved.redComponent * 255).rounded()) & 0xFF
+        let g = UInt32((resolved.greenComponent * 255).rounded()) & 0xFF
+        let b = UInt32((resolved.blueComponent * 255).rounded()) & 0xFF
+        return (r << 16) | (g << 8) | b
     }
 }

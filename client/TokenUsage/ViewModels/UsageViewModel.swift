@@ -67,6 +67,18 @@ final class UsageViewModel: ObservableObject {
         return nonEmpty.reduce(0) { $0 + $1.cost } / Double(nonEmpty.count)
     }
 
+    /// Best estimate of current 5-hour usage (0–100). Prefers OAuth API,
+    /// falls back to ccusage's empirical max-token estimate, then nil.
+    var currentUsagePercent: Double? {
+        if let oauth = oauthLimits {
+            return oauth.fiveHourPercent
+        }
+        if let usage = activeBlock?.usage {
+            return usage.currentPercent * 100
+        }
+        return nil
+    }
+
     init() {
         if let mode = MenuBarDisplayMode(rawValue: storedDisplayMode) {
             menuBarDisplayMode = mode

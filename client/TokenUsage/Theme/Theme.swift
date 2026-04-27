@@ -15,6 +15,14 @@ struct Palette: Equatable {
     let warning: Color
     let error: Color
     let barEmpty: Color
+
+    /// Traffic-light color for usage percent (0–100):
+    /// `< 60` → `defaultColor`, `60–85` → warning amber, `≥ 85` → error red.
+    func accentForUsage(_ percent: Double, defaultColor: Color) -> Color {
+        if percent >= 85 { return error }
+        if percent >= 60 { return warning }
+        return defaultColor
+    }
 }
 
 extension Palette {
