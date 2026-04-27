@@ -48,8 +48,16 @@ actor CCUsageService {
     }
 
     func fetchActiveBlock() async throws -> BlocksResponse {
-        let output = try await run(["ccusage", "blocks", "--json", "--active", "--offline"])
+        let output = try await run([
+            "ccusage", "blocks", "--json", "--active", "--offline",
+            "--token-limit", "max"
+        ])
         return try JSONDecoder().decode(BlocksResponse.self, from: output)
+    }
+
+    func fetchWeekly() async throws -> WeeklyResponse {
+        let output = try await run(["ccusage", "weekly", "--json", "--offline"])
+        return try JSONDecoder().decode(WeeklyResponse.self, from: output)
     }
 
     private static func formatDate(_ date: Date) -> String {

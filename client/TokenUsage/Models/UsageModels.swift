@@ -90,6 +90,14 @@ struct BlockEntry: Codable {
     let costUSD: Double
     let burnRate: BlockBurnRate?
     let projection: BlockProjection?
+    let tokenLimitStatus: TokenLimitStatus?
+}
+
+struct TokenLimitStatus: Codable {
+    let limit: Int
+    let projectedUsage: Int
+    let percentUsed: Double
+    let status: String
 }
 
 struct BlockBurnRate: Codable {
@@ -106,10 +114,42 @@ struct BlockProjection: Codable {
 struct ActiveBlock: Equatable {
     let startTime: Date
     let endTime: Date
-    let progressPercent: Double
+    let progressPercent: Double  // time elapsed in 5h window
     let costUSD: Double
     let projectedCostUSD: Double?
     let costPerHour: Double?
+    let usage: BlockUsage?
+}
+
+struct BlockUsage: Equatable {
+    let totalTokens: Int
+    let limit: Int
+    let projectedTokens: Int
+    let status: BlockUsageStatus
+
+    var currentPercent: Double {
+        guard limit > 0 else { return 0 }
+        return Double(totalTokens) / Double(limit)
+    }
+
+    var projectedPercent: Double {
+        guard limit > 0 else { return 0 }
+        return Double(projectedTokens) / Double(limit)
+    }
+}
+
+enum BlockUsageStatus: String {
+    case ok
+    case warning
+    case exceeded
+
+    init(raw: String) {
+        switch raw.lowercased() {
+        case "warning": self = .warning
+        case "exceeded": self = .exceeded
+        default: self = .ok
+        }
+    }
 }
 
 // MARK: - App Display Models

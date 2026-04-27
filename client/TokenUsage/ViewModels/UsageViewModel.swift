@@ -9,10 +9,12 @@ final class UsageViewModel: ObservableObject {
     @Published var selectedPeriod: TimePeriod = .today
     @Published var menuBarDisplayMode: MenuBarDisplayMode = .tokenOnly
     @Published var activeBlock: ActiveBlock?
+    @Published var oauthLimits: AnthropicUsageService.Limits?
 
     @AppStorage("menuBarDisplayMode") private var storedDisplayMode: String = MenuBarDisplayMode.tokenOnly.rawValue
 
     private let service = CCUsageService()
+    private let anthropic = AnthropicUsageService()
     private var refreshTimer: Timer?
     private var isRefreshing = false
 
@@ -111,6 +113,11 @@ final class UsageViewModel: ObservableObject {
 
             activeBlock = try? await fetchActiveBlock()
 
+            // Pull authoritative rate-limit utilization from Anthropic OAuth API.
+            // Silent fallback to ccusage data if unavailable (no Claude Code login,
+            // custom endpoint, network error, etc.).
+            oauthLimits = try? await anthropic.fetch()
+
             refreshState = .success
         } catch {
             refreshState = .failed(error.localizedDescription)
@@ -138,13 +145,23 @@ final class UsageViewModel: ObservableObject {
         let elapsedSec = max(0, now.timeIntervalSince(start))
         let progress = totalSec > 0 ? min(1.0, elapsedSec / totalSec) : 0
 
+        let usage: BlockUsage? = block.tokenLimitStatus.map { tls in
+            BlockUsage(
+                totalTokens: block.totalTokens,
+                limit: tls.limit,
+                projectedTokens: tls.projectedUsage,
+                status: BlockUsageStatus(raw: tls.status)
+            )
+        }
+
         return ActiveBlock(
             startTime: start,
             endTime: end,
             progressPercent: progress,
             costUSD: block.costUSD,
             projectedCostUSD: block.projection?.totalCost,
-            costPerHour: block.burnRate?.costPerHour
+            costPerHour: block.burnRate?.costPerHour,
+            usage: usage
         )
     }
 

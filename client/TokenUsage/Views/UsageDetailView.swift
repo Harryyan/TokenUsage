@@ -32,7 +32,18 @@ struct UsageDetailView: View {
                     if let block = viewModel.activeBlock {
                         Hairline(color: palette.border)
                             .padding(.bottom, 20)
-                        BlockCard(block: block, palette: palette)
+                        BlockCard(
+                            block: block,
+                            liveUsage: viewModel.oauthLimits,
+                            palette: palette
+                        )
+                        .padding(.bottom, 20)
+                    }
+
+                    if let limits = viewModel.oauthLimits {
+                        Hairline(color: palette.border)
+                            .padding(.bottom, 20)
+                        WeeklyRow(limits: limits, palette: palette)
                             .padding(.bottom, 20)
                     }
 
