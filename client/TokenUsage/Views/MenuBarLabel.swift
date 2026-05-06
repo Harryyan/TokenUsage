@@ -5,11 +5,28 @@ struct MenuBarLabel: View {
     @ObservedObject var viewModel: UsageViewModel
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(nsImage: MenuBarIcon.image(color: iconColor))
+        HStack(spacing: 4) {
+            Image(systemName: "diamond.fill")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(swiftUIIconColor)
+                .imageScale(.small)
             Text(labelText)
                 .font(.system(size: 12, weight: .regular, design: .monospaced))
                 .monospacedDigit()
+        }
+    }
+
+    private var swiftUIIconColor: Color {
+        switch viewModel.refreshState {
+        case .failed: return Color(red: 215/255, green: 25/255, blue: 33/255)
+        case .loading, .refreshing: return Color(red: 212/255, green: 168/255, blue: 67/255)
+        default:
+            guard let p = viewModel.currentUsagePercent else {
+                return Color(red: 127/255, green: 224/255, blue: 168/255)
+            }
+            if p >= 85 { return Color(red: 215/255, green: 25/255, blue: 33/255) }
+            if p >= 60 { return Color(red: 212/255, green: 168/255, blue: 67/255) }
+            return Color(red: 127/255, green: 224/255, blue: 168/255)
         }
     }
 

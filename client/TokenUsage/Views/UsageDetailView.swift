@@ -54,8 +54,10 @@ struct UsageDetailView: View {
                             .padding(.bottom, 14)
                     }
                 }
+                .frame(width: 300, alignment: .leading)
             }
-            .frame(maxHeight: 380)
+            .frame(width: 300, height: 380)
+            .clipped()
 
             footer
         }
